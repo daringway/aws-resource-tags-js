@@ -1,0 +1,35 @@
+{
+  "name": "aws-resource-tags",
+  "version": "0.1.6",
+  "description": "Javascript library for access AWS Resource Tags",
+  "main": "src/index.js",
+  "files": [
+    "README.md",
+    "src"
+  ],
+  "scripts": {
+    "start": "npx nodemon --exec babel-node test.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/daringway/aws-resource-tags-js.git"
+  },
+  "keywords": [
+    "aws",
+    "javascript",
+    "tags"
+  ],
+  "author": "Walter Derezinski <wderezin@daringway.com> (http://www.daringway.com/)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/daringway/aws-resource-tags-js/issues"
+  },
+  "homepage": "https://gitlab.com/daringway/aws-resource-tags-js#readme",
+  "dependencies": {
+    "aws-sdk": "^2.472.0"
+  },
+  "devDependencies": {
+    "nodeman": "^1.1.2"
+  }
+}
