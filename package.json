@@ -1,14 +1,14 @@
 {
   "name": "aws-resource-tags",
-  "version": "0.1.6",
+  "version": "0.1.26",
   "description": "Javascript library for access AWS Resource Tags",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "files": [
     "README.md",
     "src"
   ],
   "scripts": {
-    "start": "npx nodemon --exec babel-node test.js",
+    "task": "node ./tasksfile.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -27,9 +27,15 @@
   },
   "homepage": "https://gitlab.com/daringway/aws-resource-tags-js#readme",
   "dependencies": {
-    "aws-sdk": "^2.472.0"
+    "@types/node": "^12.0.10",
+    "aws-sdk": "^2.479.0",
+    "promise-ratelimit": "0.0.3"
   },
   "devDependencies": {
-    "nodeman": "^1.1.2"
+    "glob": "^7.1.4",
+    "nodeman": "^1.1.2",
+    "source-map-support": "^0.5.12",
+    "tasksfile": "^5.1.0",
+    "typescript": "^3.5.2"
   }
 }
