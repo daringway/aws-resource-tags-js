@@ -1,25 +1,23 @@
 "use strict";
 
-import { Tagger, register }  from "./base";
+import { Tagger, Tags, register }  from "./base";
 
 class ELBTagger extends Tagger {
 
     protected _getAwsLibraryName() : string { return "ELBv2"; };
     protected _getAwsApiVersion () : string { return "2015-12-01"; };
 
-    protected async _serviceGetTags() : Promise<object> {
+    protected async _serviceGetTags() : Promise<Tags> {
         let params = {
             ResourceArns: [
                 this.config.resourceArn
             ]
         };
-        return this.getAwsFunction().describeTags(params).promise()
-            .then((data) => {
-                return Tagger._akvToMap(data["TagDescriptions"][0]["Tags"]);
-            });
+        let data = await this.getAwsFunction().describeTags(params).promise();
+        return Tagger._akvToMap(data["TagDescriptions"][0]["Tags"]);
     };
 
-    protected async _serviceUpdateTags(tags) {
+    protected async _serviceUpdateTags(tags : Tags) {
         let params = {
             ResourceArns: [
                 this.config.resourceArn
@@ -29,7 +27,7 @@ class ELBTagger extends Tagger {
         return this.getAwsFunction().addTags(params).promise()
     }
 
-    protected async _serviceDeleteTags(tagList) {
+    protected async _serviceDeleteTags(tagList : string[]) {
         let params = {
             ResourceArns: [
                 this.config.resourceArn
@@ -37,7 +35,6 @@ class ELBTagger extends Tagger {
             TagKeys: tagList
         };
         return this.getAwsFunction().removeTags(params).promise()
-
     }
 }
 

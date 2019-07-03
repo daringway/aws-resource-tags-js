@@ -1,13 +1,13 @@
 "use strict";
 
-import { Tagger, register }  from "./base";
+import { Tagger, Tags, register }  from "./base";
 
 class RDSTagger extends Tagger {
 
     protected _getAwsLibraryName() : string { return "RDS"; };
     protected _getAwsApiVersion () : string { return "2014-10-31"; };
 
-    protected async _serviceGetTags() : Promise<object> {
+    protected async _serviceGetTags() : Promise<Tags> {
         let params = {
             ResourceName: this.config.resourceArn
         };
@@ -17,7 +17,7 @@ class RDSTagger extends Tagger {
             });
     };
 
-    protected async _serviceUpdateTags(tags) {
+    protected async _serviceUpdateTags(tags : Tags) {
         let params = {
             ResourceName: this.config.resourceArn,
             Tags: Tagger._kvMapToArray(tags)
@@ -26,7 +26,7 @@ class RDSTagger extends Tagger {
         return this.getAwsFunction().addTagsToResource(params).promise();
     };
 
-    protected async _serviceDeleteTags(tagKeys) {
+    protected async _serviceDeleteTags(tagKeys : string[]) {
         let params = {
             ResourceName: this.config.resourceArn,
             TagKeys: tagKeys

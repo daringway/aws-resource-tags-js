@@ -1,13 +1,13 @@
 "use strict";
 
-import { Tagger, register }  from "./base";
+import { Tagger, Tags, register }  from "./base";
 
 export default class Ec2InstanceTagger extends Tagger {
 
     protected _getAwsLibraryName() : string { return "EC2"; };
     protected _getAwsApiVersion () : string { return "2016-11-15"; };
 
-    protected async _serviceGetTags() : Promise<object> {
+    protected async _serviceGetTags() : Promise<Tags> {
         let params = {
             Filters: [
                 {
@@ -22,7 +22,7 @@ export default class Ec2InstanceTagger extends Tagger {
         return Tagger._akvToMap(data["Tags"]);
     };
 
-    protected async _serviceUpdateTags(tags) {
+    protected async _serviceUpdateTags(tags : Tags) {
         let params = {
             Resources: [
                 this.config.resourceId
@@ -32,14 +32,13 @@ export default class Ec2InstanceTagger extends Tagger {
         return this.getAwsFunction().createTags(params).promise();
     };
 
-    protected async _serviceDeleteTags(tagList) {
+    protected async _serviceDeleteTags(tagList : string[]) {
         let params = {
             Resources: [
                 this.config.resourceId
             ],
             Tags: Tagger._keyListToListMap(tagList)
         };
-
         return this.getAwsFunction().deleteTags(params).promise();
     };
 }

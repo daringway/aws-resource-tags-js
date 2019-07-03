@@ -1,11 +1,11 @@
 "use strict";
 
-import {Tagger, register} from "./base";
+import {Tagger, Tags, register} from "./base";
 import Ec2InstanceTagger  from "./ec2-instance";
 
 class Ec2VolumeTagger extends Ec2InstanceTagger {
 
-    protected async _serviceGetTags() : Promise<object> {
+    protected async _serviceGetTags() : Promise<Tags> {
         let params = {
             Filters: [
                 {
@@ -16,10 +16,9 @@ class Ec2VolumeTagger extends Ec2InstanceTagger {
                 }
             ]
         };
-        return this.getAwsFunction().describeVolumes(params).promise()
-            .then((data) => {
-                return Tagger._akvToMap(data["Volumes"][0]["Tags"]);
-            });
+        let data = await this.getAwsFunction().describeVolumes(params).promise();
+        return Tagger._akvToMap(data["Volumes"][0]["Tags"]);
+
     };
 }
 

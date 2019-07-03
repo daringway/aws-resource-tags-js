@@ -4,7 +4,7 @@ import * as AWS from "aws-sdk";
 
 let throttleRetry = require("promise-ratelimit")(50);
 let backOffTime = 250;
-let maxBackoffTime = 500;
+let maxBackOffTime = 500;
 let maxRetries = 10;
 
 export interface TaggerConfig {
@@ -18,6 +18,10 @@ export interface AboutTagger {
     readonly taggerClass    : typeof Tagger,
     readonly service        : string,
     readonly resourceType   : string,
+}
+
+export interface Tags {
+    [key: string]: string
 }
 
 let taggers: Record<string, AboutTagger> = {};
@@ -87,7 +91,7 @@ function retry(obj, fn, fnArgs, retries=maxRetries, err=null) {
                     .then(x => resolve(x))
                     .catch(err => {
                         if (err.retryDelay > 0) {
-                            if (backOffTime < maxBackoffTime) {
+                            if (backOffTime < maxBackOffTime) {
                                 // First time through the backOffTime won"t increase
                                 backOffTime += Math.ceil(err.retryDelay) * (maxRetries - retries);
                             }
@@ -111,8 +115,8 @@ function retry(obj, fn, fnArgs, retries=maxRetries, err=null) {
 export abstract class Tagger  {
 
     public  config : TaggerConfig;
-    private _cachedTags: object | null;
-    private _loadedTags: object | null;
+    private _cachedTags: Tags | null;
+    private _loadedTags: Tags | null;
 
     private awsFunction: any | null;
 
@@ -127,8 +131,8 @@ export abstract class Tagger  {
 
     };
 
-    protected abstract async _serviceGetTags() : Promise<object>;
-    protected abstract async _serviceUpdateTags(tagMapUpdates : object);
+    protected abstract async _serviceGetTags() : Promise<Tags>;
+    protected abstract async _serviceUpdateTags(tagMapUpdates : Tags);
     protected abstract async _serviceDeleteTags(tagsToDeleteList : string[]);
     protected abstract _getAwsLibraryName() : string;
     protected abstract _getAwsApiVersion()  : string;
@@ -168,17 +172,17 @@ export abstract class Tagger  {
         }
     }
 
-    get tags() {
+    get tags() : Tags {
         this.checkLoaded();
         return this._cachedTags;
     }
-    set tags(tagMap) {
+    set tags(tagMap : Tags) {
         this.checkLoaded();
         // TODO add validator
         this._cachedTags = tagMap;
     }
 
-    setTags(tags) : object {
+    setTags(tags : Tags) : Tags {
         this._cachedTags = tags;
         this._loadedTags = {...tags};
         return this._cachedTags;
@@ -227,7 +231,7 @@ export abstract class Tagger  {
         return;
     }
 
-    protected async _updateAndDeleteTags(updateMap : {}, deleteList : []) {
+    protected async _updateAndDeleteTags(updateMap : Tags, deleteList : string[]) {
         let promises = [];
         if (Object.keys(deleteList).length > 0) {
             promises.push(this._serviceDeleteTags(deleteList));
@@ -238,7 +242,7 @@ export abstract class Tagger  {
         return Promise.all(promises);
     }
 
-    protected static _akvToMap(arrayOfKeyValues : object[]) : object {
+    protected static _akvToMap(arrayOfKeyValues : object[]) : Tags {
         let newData = {};
         arrayOfKeyValues.forEach(function (element) {
             newData[element["Key"]] = element["Value"];
@@ -254,7 +258,7 @@ export abstract class Tagger  {
         return newArray;
     }
 
-    protected static _keyListToListMap(tags : object[]) : object[] {
+    protected static _keyListToListMap(tags : string[]) : object[] {
         let newList = [];
         tags.forEach(function (key) {
             newList.push({"Key": key})

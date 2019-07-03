@@ -1,33 +1,26 @@
 "use strict";
 
-import { Tagger, register }  from "./base";
+import { Tagger, Tags, register }  from "./base";
 
 class RedshiftTagger extends Tagger {
 
     protected _getAwsLibraryName() : string { return "Redshift"; };
     protected _getAwsApiVersion () : string { return "2012-12-01"; };
 
-    protected async _serviceGetTags() : Promise<object> {
+    protected async _serviceGetTags() : Promise<Tags> {
         let params = {
             ResourceName: this.config.resourceArn
         };
-        return new Promise( (resolve, reject) => {
-            this.getAwsFunction().describeTags(params).promise()
-            .then((data) => {
-
-                let tags = {};
-                data["TaggedResources"].forEach( (iData) => {
-                    let tag = iData["Tag"];
-                    tags[tag["Key"]] = tag["Value"];
-                });
-                resolve(tags);
-            }).catch( (e) => {
-                reject(e);
-            });
-        })
+        let data = await this.getAwsFunction().describeTags(params).promise();
+        let tags = {};
+        data["TaggedResources"].forEach( (iData) => {
+            let tag = iData["Tag"];
+            tags[tag["Key"]] = tag["Value"];
+        });
+        return(tags);
     };
 
-    protected async _serviceUpdateTags(tags) {
+    protected async _serviceUpdateTags(tags : Tags) {
         let params = {
             ResourceName: this.config.resourceArn,
             Tags: Tagger._kvMapToArray(tags)
@@ -35,7 +28,7 @@ class RedshiftTagger extends Tagger {
         return this.getAwsFunction().createTags(params).promise();
     }
 
-    protected async _serviceDeleteTags(tagKeys) {
+    protected async _serviceDeleteTags(tagKeys : string[]) {
         let params = {
             ResourceName: this.config.resourceArn,
             TagKeys: tagKeys

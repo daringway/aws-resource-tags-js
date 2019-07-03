@@ -31,9 +31,16 @@ function build() {
     sh("npx tsc", {nopipe: true});
 }
 
+function publish() {
+    clean();
+    build();
+    sh("npm publish", {nopipe: true});
+}
+
 cli({
     clean,
     build,
     test,
-    testRun
+    testRun,
+    publish
 });

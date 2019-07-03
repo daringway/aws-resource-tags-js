@@ -1,6 +1,6 @@
 "use strict";
 
-import { Tagger, register }  from "./base";
+import { Tagger, Tags, register }  from "./base";
 let throttleRG = require("promise-ratelimit")(250);
 
 class DefaultTagger extends Tagger {
@@ -8,13 +8,13 @@ class DefaultTagger extends Tagger {
     protected _getAwsLibraryName() : string { return "ResourceGroupsTaggingAPI"; };
     protected _getAwsApiVersion()  : string { return "2017-01-26"; };
 
-    protected async _serviceGetTags() : Promise<object> {
+    protected async _serviceGetTags() : Promise<Tags> {
         return new Promise((resolve, reject) => {
             reject("_serviceGetTags not implemented");
         });
     };
 
-    protected async _serviceUpdateTags(tagMapUpdates : object) {
+    protected async _serviceUpdateTags(tagMapUpdates : Tags) {
         return new Promise( (resolve, reject) => {
             let params = {
                 ResourceARNList: [
@@ -47,7 +47,7 @@ class DefaultTagger extends Tagger {
         });
     };
 
-    protected async _serviceDeleteTags(tagsToDeleteList) {
+    protected async _serviceDeleteTags(tagsToDeleteList : string[]) {
         return new Promise( (resolve, reject) => {
             let params = {
                 ResourceARNList: [

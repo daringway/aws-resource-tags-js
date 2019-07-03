@@ -1,6 +1,6 @@
 "use strict";
 
-import { Tagger, register  }  from "./base";
+import { Tagger, Tags, register  }  from "./base";
 
 class S3Tagger extends Tagger {
 
@@ -15,20 +15,19 @@ class S3Tagger extends Tagger {
         return data["LocationConstraint"];
     }
 
-    protected async _serviceGetTags() : Promise<object> {
+    protected async _serviceGetTags() : Promise<Tags> {
         let params = {
             Bucket: this.config.resourceId
         };
-        return this.getAwsFunction().getBucketTagging(params).promise()
-            .then((data) => {
-                return Tagger._akvToMap(data["TagSet"]);
-            });
+        let data = await this.getAwsFunction().getBucketTagging(params).promise();
+        return Tagger._akvToMap(data["TagSet"]);
+
     };
 
-    protected async _updateAndDeleteTags(tagsToUpdate, keysToDelete) {
+    protected async _updateAndDeleteTags(tagsToUpdate : Tags, keysToDelete : string[]) {
         if ((Object.keys(keysToDelete).length
             + Object.keys(tagsToUpdate).length) == 0) {
-          return new Promise((resolve) => { resolve() });
+          return;
         }
 
         let params = {
@@ -37,15 +36,14 @@ class S3Tagger extends Tagger {
                 TagSet: Tagger._kvMapToArray(this.tags)
             }
         };
-        // @ts-ignore
         return this.getAwsFunction().putBucketTagging(params).promise();
     }
 
     // Overriding updateAndDeleteTags so these are not used by base class, need handle abstract
-    protected async _serviceDeleteTags(tagsToDeleteList) {
+    protected async _serviceDeleteTags(tagsToDeleteList : string[]) {
     }
 
-    protected async _serviceUpdateTags(tagMapUpdates) {
+    protected async _serviceUpdateTags(tagMapUpdates : Tags) {
     }
 }
 

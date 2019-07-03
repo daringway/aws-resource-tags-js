@@ -1,11 +1,11 @@
 {
   "name": "aws-resource-tags",
-  "version": "0.2.00",
+  "version": "0.2.02",
   "description": "Javascript library for access AWS Resource Tags",
   "main": "dist/index.js",
   "files": [
     "README.md",
-    "src"
+    "dist"
   ],
   "scripts": {
     "task": "node ./tasksfile.js",
