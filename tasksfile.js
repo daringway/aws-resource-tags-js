@@ -24,10 +24,13 @@ function testRun() {
 }
 
 function build() {
-    let files = fs.readdirSync("./src/workers/")
+    let files = fs.readdirSync("./src/workers/");
+
     let output = "//This File is auto generated during the build process\n" +
-        files.map( x => {return "import \"./workers/" + path.basename(x, ".ts") + "\";\n"}).join("");
-    fs.writeFileSync("./src/factory.ts", output);
+        files.filter( x => { return x !== "index.ts" })
+        .map( x => {return "import \"./" + path.basename(x, ".ts") + "\";\n"}).join("");
+    fs.writeFileSync("./src/workers/index.ts", output);
+
     sh("npx tsc", {nopipe: true});
 }
 

@@ -1,11 +1,11 @@
 "use strict";
 
+import * as AWS from "aws-sdk";
 import "source-map-support/register"
 import { Tagger, getWorkerInstance } from "./workers/base";
+// NOTE workers/index.ts is dynamically generated at build time, look in taskfile.js for the magic
+import "./workers/";
 
-// NOTE factory is dynamically generated at build time, look in taskfile.js
-import "./factory";
-const AWS = require("aws-sdk");
 
 // class TagWorkerNotFoundError extends Error {
 //     constructor(workerName, arn) {
@@ -64,6 +64,36 @@ export async function forEachTagger(params : object, callback : Function, region
     }
 
 }
+
+export function getTaggerByArn(resourceArn : string, resourceRegion? : string): Tagger | null{
+    let service = resourceArn.split(":")[2];
+    let region = resourceArn.split(":")[3];
+    let accountId = resourceArn.split(":")[4];
+    let resourceType = null;
+    let resourceId = null;
+
+    if (! region) {
+        region = resourceRegion;
+    }
+
+    if (["lambda", "rds", "redshift"].indexOf(service) >= 0) {
+        resourceType = resourceArn.split(":")[5];
+        resourceId = resourceArn.split(":")[6];
+    } else if (["ec2", "subnet", "cloudfront", "elasticloadbalancing", "dynamodb", "es"].indexOf(service) >= 0) {
+        let resource = resourceArn.split(":")[5];
+        resourceType = resource.split("/")[0];
+        resourceId = resource.split("/")[1];
+    } else if (["s3"].indexOf(service) >= 0) {
+        resourceType = service;
+        resourceId = resourceArn.split(":")[5];
+    } else {
+        resourceType = "unknown";
+        resourceId = "unknown";
+    }
+
+    return getWorkerInstance(resourceArn, service, region, accountId, resourceType, resourceId);
+}
+
 
 // let x={
 //     "version": "0",
@@ -248,37 +278,3 @@ export async function forEachTagger(params : object, callback : Function, region
 //     let eventName = event.detail.eventName;
 //     let ownerArn  = event.detail.userIdentity.arn;
 // }
-
-export function getTaggerByArn(resourceArn : string, resourceRegion? : string): Tagger | null{
-    let service = resourceArn.split(":")[2];
-    let region = resourceArn.split(":")[3];
-    let accountId = resourceArn.split(":")[4];
-    let resourceType = null;
-    let resourceId = null;
-
-    if (! region) {
-        region = resourceRegion;
-    }
-
-    if (["lambda", "rds", "redshift"].indexOf(service) >= 0) {
-        resourceType = resourceArn.split(":")[5];
-        resourceId = resourceArn.split(":")[6];
-    } else if (["ec2", "subnet", "cloudfront", "elasticloadbalancing", "dynamodb", "es"].indexOf(service) >= 0) {
-        let resource = resourceArn.split(":")[5];
-        resourceType = resource.split("/")[0];
-        resourceId = resource.split("/")[1];
-    } else if (["s3"].indexOf(service) >= 0) {
-        resourceType = service;
-        resourceId = resourceArn.split(":")[5];
-    } else {
-        resourceType = "unknown";
-        resourceId = "unknown";
-    }
-
-    return getWorkerInstance(resourceArn, service, region, accountId, resourceType, resourceId);
-
-}
-
-// module.exports = {getTaggerByArn, forEachTagger, TagWorkerNotFoundError, ResourceNotFoundError, getWorkerInstance};
-
-// module.exports = {getTaggerByArn, forEachTagger, TagWorkerNotFoundError, ResourceNotFoundError, getWorkerInstance};

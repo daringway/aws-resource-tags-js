@@ -4,7 +4,7 @@
 function.zip
 dist
 public
-src/factory.ts
+src/workers/index.ts
 
 # Mac OS X
 .DS_Store
