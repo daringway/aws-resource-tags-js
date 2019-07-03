@@ -7,8 +7,7 @@ export default class Ec2InstanceTagger extends Tagger {
     protected _getAwsLibraryName() : string { return 'EC2'; };
     protected _getAwsApiVersion () : string { return '2016-11-15'; };
 
-
-    protected _serviceGetTags() {
+    protected async _serviceGetTags() : Promise<object> {
         let params = {
             Filters: [
                 {
@@ -19,13 +18,11 @@ export default class Ec2InstanceTagger extends Tagger {
                 }
             ]
         };
-        return this.getAwsFunction().describeTags(params).promise()
-            .then((data) => {
-                return this._akvToMap(data['Tags']);
-            });
+        let data = await this.getAwsFunction().describeTags(params).promise()
+        return this._akvToMap(data['Tags']);
     };
 
-    protected _serviceUpdateTags(tags) {
+    protected async _serviceUpdateTags(tags) {
         let params = {
             Resources: [
                 this.config.resourceId
@@ -35,7 +32,7 @@ export default class Ec2InstanceTagger extends Tagger {
         return this.getAwsFunction().createTags(params).promise();
     }
 
-    protected _serviceDeleteTags(tagList) {
+    protected async _serviceDeleteTags(tagList) {
         let params = {
             Resources: [
                 this.config.resourceId

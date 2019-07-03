@@ -5,7 +5,7 @@ import Ec2InstanceTagger  from "./ec2-instance";
 
 class Ec2VolumeTagger extends Ec2InstanceTagger {
 
-    protected _serviceGetTags() {
+    protected async _serviceGetTags() : Promise<object> {
         var params = {
             Filters: [
                 {

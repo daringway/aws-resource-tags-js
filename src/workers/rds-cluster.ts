@@ -7,7 +7,7 @@ class RDSTagger extends Tagger {
     protected _getAwsLibraryName() : string { return 'RDS'; };
     protected _getAwsApiVersion () : string { return '2014-10-31'; };
 
-    protected _serviceGetTags() {
+    protected async _serviceGetTags() : Promise<object> {
         let params = {
             ResourceName: this.config.resourceArn
         };
@@ -17,7 +17,7 @@ class RDSTagger extends Tagger {
             });
     };
 
-    protected _serviceUpdateTags(tags) {
+    protected async _serviceUpdateTags(tags) {
         let params = {
             ResourceName: this.config.resourceArn,
             Tags: this._kvMapToArray(tags)
@@ -26,7 +26,7 @@ class RDSTagger extends Tagger {
         return this.getAwsFunction().addTagsToResource(params).promise();
     };
 
-    protected _serviceDeleteTags(tagKeys) {
+    protected async _serviceDeleteTags(tagKeys) {
         let params = {
             ResourceName: this.config.resourceArn,
             TagKeys: tagKeys

@@ -7,7 +7,7 @@ class ELBTagger extends Tagger {
     protected _getAwsLibraryName() : string { return 'ELBv2'; };
     protected _getAwsApiVersion () : string { return '2015-12-01'; };
 
-    protected _serviceGetTags() {
+    protected async _serviceGetTags() : Promise<object> {
         let params = {
             ResourceArns: [
                 this.config.resourceArn
@@ -19,7 +19,7 @@ class ELBTagger extends Tagger {
             });
     };
 
-    protected _serviceUpdateTags(tags) {
+    protected async _serviceUpdateTags(tags) {
         let params = {
             ResourceArns: [
                 this.config.resourceArn
@@ -29,7 +29,7 @@ class ELBTagger extends Tagger {
         return this.getAwsFunction().addTags(params).promise()
     }
 
-    protected _serviceDeleteTags(tagList) {
+    protected async _serviceDeleteTags(tagList) {
         let params = {
             ResourceArns: [
                 this.config.resourceArn

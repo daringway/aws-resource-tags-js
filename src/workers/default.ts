@@ -8,13 +8,13 @@ class DefaultTagger extends Tagger {
     protected _getAwsLibraryName() : string { return 'ResourceGroupsTaggingAPI'; };
     protected _getAwsApiVersion()  : string { return '2017-01-26'; };
 
-    _serviceGetTags() {
+    protected async _serviceGetTags() : Promise<object> {
         return new Promise((resolve, reject) => {
             reject('_serviceGetTags not implemented');
         });
     };
 
-    _serviceUpdateTags(tagMapUpdates) {
+    protected async _serviceUpdateTags(tagMapUpdates : object) {
         return new Promise( (resolve, reject) => {
             let params = {
                 ResourceARNList: [
@@ -47,7 +47,7 @@ class DefaultTagger extends Tagger {
         });
     };
 
-    _serviceDeleteTags(tagsToDeleteList) {
+    protected async _serviceDeleteTags(tagsToDeleteList) {
         return new Promise( (resolve, reject) => {
             let params = {
                 ResourceARNList: [

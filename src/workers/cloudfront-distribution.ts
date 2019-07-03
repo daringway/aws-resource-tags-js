@@ -8,18 +8,19 @@ class CloudfrontDistributionTagger extends Tagger {
     protected _getAwsApiVersion()  : string { return '2018-11-05'; };
 
 
-    protected _serviceGetTags() {
+    protected async _serviceGetTags() : Promise<object> {
         let params = {
             Resource: this.config.resourceArn
         };
 
-        return this.getAwsFunction().listTagsForResource(params).promise()
+        let aws = this.getAwsFunction();
+        return aws.listTagsForResource(params).promise()
             .then((data) => {
                 return this._akvToMap(data['Tags']['Items']);
             });
     };
 
-    protected _serviceUpdateTags(tags) {
+    protected async _serviceUpdateTags(tags) {
         let params = {
             Resource: this.config.resourceArn,
             Tags: {
@@ -33,7 +34,7 @@ class CloudfrontDistributionTagger extends Tagger {
             });
     };
 
-    protected _serviceDeleteTags(tags) {
+    protected async _serviceDeleteTags(tags) {
         let params = {
             Resource: this.config.resourceArn,
             TagKeys: {

@@ -7,7 +7,7 @@ class LambdaTagger extends Tagger {
     protected _getAwsLibraryName() : string { return 'Lambda'; };
     protected _getAwsApiVersion () : string { return '2015-03-31'; };
 
-    protected _serviceGetTags() {
+    protected async _serviceGetTags() : Promise<object> {
         let params = {
             Resource: this.config.resourceArn
         };
@@ -18,7 +18,7 @@ class LambdaTagger extends Tagger {
             });
     };
 
-    protected _serviceUpdateTags(tags) {
+    protected async _serviceUpdateTags(tags) {
         let params = {
             Resource: this.config.resourceArn,
             Tags: tags
@@ -27,7 +27,7 @@ class LambdaTagger extends Tagger {
         return this.getAwsFunction().tagResource(params).promise();
     };
 
-    protected _serviceDeleteTags(tags) {
+    protected async _serviceDeleteTags(tags) {
         let params = {
             Resource: this.config.resourceArn,
             TagKeys: tags

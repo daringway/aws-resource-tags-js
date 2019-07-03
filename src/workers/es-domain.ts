@@ -8,7 +8,7 @@ class ElasticSearchTagger extends Tagger {
     protected _getAwsLibraryName() : string { return 'ES'; };
     protected _getAwsApiVersion () : string { return '2015-01-01'; };
 
-    protected _serviceGetTags() {
+    protected async _serviceGetTags() : Promise<object> {
         let params = {
             ARN: this.config.resourceArn
         };
@@ -18,7 +18,7 @@ class ElasticSearchTagger extends Tagger {
             });
     };
 
-    protected _serviceUpdateTags(tags) {
+    protected async _serviceUpdateTags(tags) {
         let params = {
             ARN: this.config.resourceArn,
             TagList: this._kvMapToArray(tags)
@@ -27,7 +27,7 @@ class ElasticSearchTagger extends Tagger {
         return this.getAwsFunction().addTags(params).promise();
     };
 
-    protected _serviceDeleteTags(tagKeys) {
+    protected async _serviceDeleteTags(tagKeys) {
         let params = {
             ARN: this.config.resourceArn,
             TagKeys: tagKeys

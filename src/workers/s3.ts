@@ -7,26 +7,15 @@ class S3Tagger extends Tagger {
     protected _getAwsLibraryName() : string { return  'S3'; };
     protected _getAwsApiVersion () : string { return  '2006-03-01'; };
 
-    protected getResourceRegion() {
-        let region = super.getResourceRegion();
-        if ( ! region ) {
-
-            var params = {
-                Bucket: this.config.resourceId
-            };
-            this.getAwsFunction().getBucketLocation(params, function(err, data) {
-                if (err) console.log(err, err.stack); // an error occurred
-                else     console.log(data);           // successful response
-                /*
-                data = {
-                 LocationConstraint: "us-west-2"
-                }
-                */
-            });
-        }
+    protected async getResourceRegion() : Promise<string> {
+        var params = {
+            Bucket: this.config.resourceId
+        };
+        let data = await this.getAwsFunction(true).getBucketLocation(params).promise();
+        return data['LocationConstraint'];
     }
 
-    _serviceGetTags() {
+    protected async _serviceGetTags() : Promise<object> {
         let params = {
             Bucket: this.config.resourceId
         };
@@ -36,7 +25,7 @@ class S3Tagger extends Tagger {
             });
     };
 
-    _updateAndDeleteTags(tagsToUpdate, keysToDelete) {
+    protected async _updateAndDeleteTags(tagsToUpdate, keysToDelete) {
         if ((Object.keys(keysToDelete).length
             + Object.keys(tagsToUpdate).length) == 0) {
           return new Promise((resolve) => { resolve() });
@@ -52,10 +41,10 @@ class S3Tagger extends Tagger {
     }
 
     // Overriding updateAndDeleteTags so these are not used by base class, need handle abstract
-    protected _serviceDeleteTags(tagsToDeleteList) {
+    protected async _serviceDeleteTags(tagsToDeleteList) {
     }
 
-    protected _serviceUpdateTags(tagMapUpdates) {
+    protected async _serviceUpdateTags(tagMapUpdates) {
     }
 }
 

@@ -9,7 +9,7 @@ let maxRetries = 10;
 
 export interface TaggerConfig {
     readonly resourceArn     : string,
-    readonly region          : string,
+             region          : string,
     readonly accountId       : string,
     readonly resourceId      : string,
 }
@@ -107,44 +107,59 @@ function retry(obj, fn, fnargs, retries=maxRetries, err=null) {
 export abstract class Tagger  {
 
     public  config : TaggerConfig;
-    private _cachedTags: Object;
-    private _loadedTags: Object;
+    private _cachedTags: object | null;
+    private _loadedTags: object | null;
 
-    private awsFunction: any;
+    private awsFunction: object | null;
 
     constructor(config : TaggerConfig) {
 
         this.config = config;
 
-        this._cachedTags = undefined;
-        this._loadedTags = undefined;
+        this._cachedTags = null;
+        this._loadedTags = null;
 
-        this.awsFunction = undefined;
+        this.awsFunction = null;
 
     };
 
-    protected abstract _serviceGetTags();
-    protected abstract _serviceUpdateTags(tagMapUpdates);
-    protected abstract _serviceDeleteTags(tagsToDeleteList);
+    protected abstract async _serviceGetTags() : Promise<object>;
+    protected abstract async _serviceUpdateTags(tagMapUpdates : object);
+    protected abstract async _serviceDeleteTags(tagsToDeleteList : string[]);
     protected abstract _getAwsLibraryName() : string;
     protected abstract _getAwsApiVersion()  : string;
 
-    protected getAwsFunction() : any {
-        if (! this.awsFunction) {
+    private getEnvironmentRegion() : string {
+        if (process.env.AWS_REGION) {
+            return process.env.AWS_REGION;
+        } else if (process.env.AWS_DEFAULT_REGION) {
+            return process.env.AWS_DEFAULT_REGION
+        } else {
+            return "us-east-1";
+        }
+    }
+
+    protected  getAwsFunction(useEnviornmentForRegion? : boolean) : any {
+        if (this.awsFunction === null) {
+            let regionToUse = this.config.region;
+            if (useEnviornmentForRegion) {
+                regionToUse = this.getEnvironmentRegion();
+            }
+
             this.awsFunction = new AWS[this._getAwsLibraryName()]({
                 apiVersion: this._getAwsApiVersion(),
-                region: this.config.region
+                region: regionToUse
             });
         }
        return this.awsFunction;
     }
 
-    protected getResourceRegion() {
+    protected async getResourceRegion() : Promise<string> {
         return this.config.region;
     }
 
     private checkLoaded() {
-        if ( typeof this._loadedTags === undefined  ) {
+        if ( typeof this._loadedTags === null ) {
             throw new Error('Must call load() first');
         }
     }
@@ -170,47 +185,45 @@ export abstract class Tagger  {
         return this._cachedTags;
     }
 
-    public load() {
-        return new Promise((resolve, reject) => {
-            if ( this._cachedTags !== undefined) {
-                resolve(this._cachedTags);
+    public async load() : Promise<object> {
+        if (this._cachedTags === null) {
+            if (this.config.region === undefined) {
+                this.config.region = await this.getResourceRegion();
             }
-            this._serviceGetTags().then((data) => {
-                this.setTags(data);
-                resolve(this._cachedTags);
-            }).catch((e) => {
-                reject(e);
-            })
-        })
+            let tags = await this._serviceGetTags();
+            this.setTags(tags);
+
+        }
+        return this.tags;
     };
 
-    public save() {
-        return new Promise((resolve, reject) => {
-            this.checkLoaded();
-            let keysToDelete = [];
-            let tagsToUpdate = {};
-            for (let key in this._loadedTags) {
-                if (key in this._cachedTags) {
-                    if (this._loadedTags[key] != this._cachedTags[key]) {
-                        tagsToUpdate[key] = this._cachedTags[key];
-                    }
-                } else {
-                    keysToDelete.push(key);
-                }
-            }
-            for (let key in this._cachedTags) {
-                if (!(key in this._loadedTags)) {
+    public async save() {
+        if (this.config.region === undefined ) {
+            this.config.region = await this.getResourceRegion();
+        }
+
+        this.checkLoaded();
+        let keysToDelete = [];
+        let tagsToUpdate = {};
+        for (let key in this._loadedTags) {
+            if (key in this._cachedTags) {
+                if (this._loadedTags[key] != this._cachedTags[key]) {
                     tagsToUpdate[key] = this._cachedTags[key];
                 }
+            } else {
+                keysToDelete.push(key);
             }
-            retry(this, '_updateAndDeleteTags', [tagsToUpdate, keysToDelete])
-                .then(() => {
-                    resolve();
-                });
-        })
+        }
+        for (let key in this._cachedTags) {
+            if (!(key in this._loadedTags)) {
+                tagsToUpdate[key] = this._cachedTags[key];
+            }
+        }
+        await retry(this, '_updateAndDeleteTags', [tagsToUpdate, keysToDelete]);
+        return;
     }
 
-    protected _updateAndDeleteTags(updateMap, deleteList) {
+    protected async _updateAndDeleteTags(updateMap : {}, deleteList : []) {
         let promises = [];
         if (Object.keys(deleteList).length > 0) {
             promises.push(this._serviceDeleteTags(deleteList));
@@ -221,7 +234,7 @@ export abstract class Tagger  {
         return Promise.all(promises);
     }
 
-    protected _akvToMap(arrayOfKeyValues) {
+    protected _akvToMap(arrayOfKeyValues : object[]) : object {
         let newdata = {};
         arrayOfKeyValues.forEach(function (element) {
             newdata[element['Key']] = element['Value'];
@@ -229,7 +242,7 @@ export abstract class Tagger  {
         return newdata;
     };
 
-    protected _kvMapToArray(tagMap) {
+    protected _kvMapToArray(tagMap : object) : object[] {
         let newarray = [];
         for (let key in tagMap) {
             newarray.push({'Key': key, 'Value': tagMap[key]});
@@ -237,7 +250,7 @@ export abstract class Tagger  {
         return newarray;
     }
 
-    protected _keyListToListMap(tags) {
+    protected _keyListToListMap(tags : object[]) : object[] {
         let newlist = [];
         tags.forEach(function (key) {
             newlist.push({'Key': key})

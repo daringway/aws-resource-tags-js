@@ -7,7 +7,7 @@ class DynamoDBTagger extends Tagger {
     protected _getAwsLibraryName() : string { return 'DynamoDB'; };
     protected _getAwsApiVersion() : string { return '2012-08-10'; };
 
-    protected _serviceGetTags() {
+    protected async _serviceGetTags() : Promise<object[]> {
         let params = {
             ResourceArn: this.config.resourceArn
         };
@@ -17,7 +17,7 @@ class DynamoDBTagger extends Tagger {
             });
     };
 
-    protected _serviceUpdateTags(tags) {
+    protected async _serviceUpdateTags(tags) {
         let params = {
             ResourceArn: this.config.resourceArn,
             Tags: this._kvMapToArray(tags)
@@ -25,7 +25,7 @@ class DynamoDBTagger extends Tagger {
         return this.getAwsFunction().tagResource(params).promise();
     }
 
-    protected _serviceDeleteTags(tagList) {
+    protected async _serviceDeleteTags(tagList) {
         let params = {
             ResourceArn: this.config.resourceArn,
             TagKeys: tagList

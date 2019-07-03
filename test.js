@@ -9,13 +9,11 @@ let testArns = [
     'arn:aws:lambda:us-east-1:717475838310:function:cloudfront-edge-index',
     'arn:aws:ec2:us-east-1:717475838310:instance/i-034e6e41f6cfc1e73',
     'arn:aws:ec2:us-east-1:717475838310:subnet/subnet-0df91151',
-    // 'arn:aws:cloudfront::717475838310:distribution/EIN0PLW2VI08W',
-    'arn:aws:s3:::daring-packages',
     'arn:aws:elasticloadbalancing:us-east-1:717475838310:loadbalancer/app/testtttt/6e236e62264c47b1',
     'arn:aws:dynamodb:us-east-1:717475838310:table/daring-site-redirect',
-    'arn:aws:rds:us-east-1:717475838310:cluster:testrds',
-    'arn:aws:es:us-east-1:717475838310:domain/testdada',
-    'arn:aws:redshift:us-east-1:717475838310:cluster:redshift-cluster-1'
+
+    'arn:aws:cloudfront::717475838310:distribution/EIN0PLW2VI08W',
+    'arn:aws:s3:::daring-packages'
 ];
 
 let tag_value = "big number " + Math.random();
@@ -72,25 +70,26 @@ resourceTagFactory.forEachTagger(searchParams, (tagger) => {
     console.log("made it");
 })
 
-// testArns.forEach(function(arn) {
-//     let tagger = resourceTagFactory.getTaggerByArn(arn);
-//     // console.log('getting tags   ', arn);
-//     tagger.load().then(function (tags) {
-//         // console.log(arn, tags['owner']);
-//         console.log(tags['tagger'], arn)
-//         tags['tagger'] = tag_value;
-//         // delete tags['tagger'];
-//     }).catch((e) => {
-//         if (e.code == 'ResourceNotFoundFault') {
-//             console.log("Skipping, resource not found ", arn);
-//         } else {
-//             console.log("**** uncaught ", e.code, e.message)
-//         }
-//     }).finally(() => {
-//         // console.log("FINAL:", tagger.tags);
-//         tagger.save();
-//     });
-// });
+testArns.forEach(function(arn) {
+    let tagger = resourceTagFactory.getTaggerByArn(arn);
+    // console.log('getting tags   ', arn);
+    tagger.load().then(function (tags) {
+        // console.log(arn, tags['owner']);
+        // console.log(tags);
+        console.log(tags['tagger'], arn)
+        tags['tagger'] = tag_value;
+        // delete tags['tagger'];
+    }).catch((e) => {
+        if (e.code == 'ResourceNotFoundFault') {
+            console.log("Skipping, resource not found ", arn);
+        } else {
+            console.log("**** uncaught ", e.code, e.message)
+        }
+    }).finally(() => {
+        // console.log("FINAL:", tagger.tags);
+        tagger.save();
+    });
+});
 
 // const configservice = new AWS.ConfigService({region: 'us-east-1'});
 // while (true) {

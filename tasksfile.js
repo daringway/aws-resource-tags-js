@@ -16,7 +16,7 @@ function clean() {
 function test() {
     build();
     console.log( "********************************");
-    sh("ts-node test.js", {nopipe: true});
+    sh("node test.js", {nopipe: true});
 }
 
 function testRun() {

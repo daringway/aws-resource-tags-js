@@ -9,10 +9,6 @@ import { Tagger, getWorkerInstance } from "./workers/base";
 import "./factory";
 const AWS = require('aws-sdk');
 
-const rgTagApi = new AWS['ResourceGroupsTaggingAPI']({apiVersion: '2017-01-26', region: 'us-east-1'});
-
-let workers = {};
-
 class TagWorkerNotFoundError extends Error {
     constructor(workerName, arn) {
         super('Tagger ' + workerName + ' not found for ' + arn);
@@ -27,29 +23,19 @@ class ResourceNotFoundError extends Error {
     }
 }
 
-// export function getWorkerInstance(workerName : string,
-//                            resourceArn : string,
-//                            service : string,
-//                            region : string,
-//                            accountId : string,
-//                            resourceType : string,
-//                            resourceId : string ) : DefaultTagger {
-//     let path = './workers/' + workerName;
-//     if ( ! fs.existsSync(path)) {
-//         path = './workers/base';
-//     }
-//     console.log("taggerx", path);
-//     import ( path ).then((Tagger) => {
-//         console.log("typeof", typeof Tagger, Tagger);
-//         return new Tagger(resourceArn, service, region, accountId, resourceType, resourceId);
-//     });
-//     // let Tagger = await import(path);
-//     // return new Tagger(resourceArn, service, region, accountId, resourceType, resourceId);
-//     // });
-// }
+function getRegion(region : string) : string {
+    if (region) {
+        return region;
+    } else if (process.env.AWS_REGION) {
+        return process.env.AWS_REGION;
+    } else if (process.env.AWS_DEFAULT_REGION) {
+        return process.env.AWS_DEFAULT_REGION
+    }
+    return undefined;
+}
 
-export function taggerCallback(callback, resourceData) {
-    let tagger = getTaggerByArn(resourceData.ResourceARN);
+function taggerCallback(callback, resourceData, region) {
+    let tagger = getTaggerByArn(resourceData.ResourceARN, region);
     // if ( tagger.service !== 'cloudformation') {}
     // @ts-ignore
     if ( ["cloudformation", 'events'].includes(tagger.service) ) {
@@ -63,12 +49,15 @@ export function taggerCallback(callback, resourceData) {
 }
 
 // Uses the ResourceGroupsTaggingApi.getResources
-export async function forEachTagger(params, callback)  {
+export async function forEachTagger(params, callback, region? : string)  {
+    let foundRegion = getRegion(region);
+    let rgTagApi = new AWS['ResourceGroupsTaggingAPI']({apiVersion: '2017-01-26', region:foundRegion});
+
     params['ResourcesPerPage'] = 50;
     return new Promise( (resolve, reject) => {
         rgTagApi.getResources(params).promise()
             .then((data) => {
-                let results = data['ResourceTagMappingList'].map(x => taggerCallback(callback, x));
+                let results = data['ResourceTagMappingList'].map(x => taggerCallback(callback, x, foundRegion));
                 Promise.all(results)
                     .then(() => {
                         if (data['PaginationToken']) {
@@ -266,12 +255,16 @@ let x={
 //     let ownerArn  = event.detail.userIdentity.arn;
 // }
 
-export function getTaggerByArn(resourceArn): Tagger {
+export function getTaggerByArn(resourceArn : string, resourceRegion? : string): Tagger {
     let service = resourceArn.split(':')[2];
     let region = resourceArn.split(':')[3];
     let accountId = resourceArn.split(':')[4];
     let resourceType = null;
     let resourceId = null;
+
+    if (! region) {
+        region = resourceRegion;
+    }
 
     if (['lambda', 'rds', 'redshift'].indexOf(service) >= 0) {
         resourceType = resourceArn.split(':')[5];

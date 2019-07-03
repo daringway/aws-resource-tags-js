@@ -7,7 +7,7 @@ class RedshiftTagger extends Tagger {
     protected _getAwsLibraryName() : string { return 'Redshift'; };
     protected _getAwsApiVersion () : string { return '2012-12-01'; };
 
-    protected _serviceGetTags() {
+    protected async _serviceGetTags() : Promise<object> {
         let params = {
             ResourceName: this.config.resourceArn
         };
@@ -27,7 +27,7 @@ class RedshiftTagger extends Tagger {
         })
     };
 
-    protected _serviceUpdateTags(tags) {
+    protected async _serviceUpdateTags(tags) {
         let params = {
             ResourceName: this.config.resourceArn,
             Tags: this._kvMapToArray(tags)
@@ -35,7 +35,7 @@ class RedshiftTagger extends Tagger {
         return this.getAwsFunction().createTags(params).promise();
     }
 
-    protected _serviceDeleteTags(tagKeys) {
+    protected async _serviceDeleteTags(tagKeys) {
         let params = {
             ResourceName: this.config.resourceArn,
             TagKeys: tagKeys
