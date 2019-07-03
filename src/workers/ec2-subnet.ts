@@ -1,12 +1,12 @@
-'use strict';
+"use strict";
 
-import {register} from "./base";
+import {Tagger, register} from "./base";
 import Ec2InstanceTagger from "./ec2-instance";
 
 class Ec2SubnetTagger extends Ec2InstanceTagger {
 
     protected  async _serviceGetTags() : Promise<object> {
-        var params = {
+        let params = {
             Filters: [
                 {
                     Name: "subnet-id",
@@ -18,11 +18,11 @@ class Ec2SubnetTagger extends Ec2InstanceTagger {
         };
         return this.getAwsFunction().describeSubnets(params).promise()
             .then((data) => {
-                return this._akvToMap(data['Subnets'][0]['Tags']);
+                return Tagger._akvToMap(data["Subnets"][0]["Tags"]);
             });
     };
+}
 
-};
-register(Ec2SubnetTagger, 'ec2', 'subnet');
+register(Ec2SubnetTagger, "ec2", "subnet");
 
 

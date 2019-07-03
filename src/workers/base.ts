@@ -1,9 +1,9 @@
-'use strict';
+"use strict";
 
-const AWS = require('aws-sdk');
+import * as AWS from "aws-sdk";
 
-let throttleRetry = require('promise-ratelimit')(50);
-let backoffTime = 250;
+let throttleRetry = require("promise-ratelimit")(50);
+let backOffTime = 250;
 let maxBackoffTime = 500;
 let maxRetries = 10;
 
@@ -31,21 +31,21 @@ export function register(taggerClass : typeof Tagger, service : string, resource
     };
 
     if (config.service && config.resourceType) {
-        taggers[config.service + '-' + config.resourceType] = config;
+        taggers[config.service + "-" + config.resourceType] = config;
     } else if (config.service) {
         taggers[config.service] = config;
     } else {
-        taggers['default'] = config;
+        taggers["default"] = config;
     }
 }
 
 function getTaggerClass(service, resourceType) : typeof Tagger {
-    if ( service + '-' + resourceType in taggers) {
-        return taggers[service + '-' + resourceType].taggerClass;
+    if ( service + "-" + resourceType in taggers) {
+        return taggers[service + "-" + resourceType].taggerClass;
     } else if ( service in taggers) {
         return taggers[service].taggerClass;
     } else {
-        return taggers['default'].taggerClass;
+        return taggers["default"].taggerClass;
     }
 }
 
@@ -54,7 +54,11 @@ export function getWorkerInstance(resourceArn : string,
                                   region : string,
                                   accountId : string,
                                   resourceType : string,
-                                  resourceId : string ) : Tagger {
+                                  resourceId : string ) : Tagger | null {
+
+    if ( ["cloudformation", "events"].includes(service) ) {
+        return null;
+    }
 
     let taggerClass = getTaggerClass(service, resourceType);
 
@@ -63,7 +67,7 @@ export function getWorkerInstance(resourceArn : string,
         region       : region,
         accountId    : accountId,
         resourceId   : resourceId
-    }
+    };
     // @ts-ignore
     return new taggerClass(config);
 
@@ -73,22 +77,22 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function retry(obj, fn, fnargs, retries=maxRetries, err=null) {
+function retry(obj, fn, fnArgs, retries=maxRetries, err=null) {
     return new Promise( (resolve, reject) => {
         if (retries == 0) {
             reject(err);
         } else {
             return throttleRetry().then(() => {
-                obj[fn](...fnargs)
+                obj[fn](...fnArgs)
                     .then(x => resolve(x))
                     .catch(err => {
                         if (err.retryDelay > 0) {
-                            if (backoffTime < maxBackoffTime) {
-                                // First time through the backOffTime won't increase
-                                backoffTime += Math.ceil(err.retryDelay) * (maxRetries - retries);
+                            if (backOffTime < maxBackoffTime) {
+                                // First time through the backOffTime won"t increase
+                                backOffTime += Math.ceil(err.retryDelay) * (maxRetries - retries);
                             }
-                            sleep(backoffTime).then(() => {
-                                retry(obj, fn, fnargs, (retries - 1), err).then(() => {
+                            sleep(backOffTime).then(() => {
+                                retry(obj, fn, fnArgs, (retries - 1), err).then(() => {
                                     resolve()
                                 })
                                     .catch((err) => {
@@ -100,7 +104,7 @@ function retry(obj, fn, fnargs, retries=maxRetries, err=null) {
                         }
                     });
             });
-        };
+        }
     });
 }
 
@@ -110,7 +114,7 @@ export abstract class Tagger  {
     private _cachedTags: object | null;
     private _loadedTags: object | null;
 
-    private awsFunction: object | null;
+    private awsFunction: any | null;
 
     constructor(config : TaggerConfig) {
 
@@ -129,7 +133,7 @@ export abstract class Tagger  {
     protected abstract _getAwsLibraryName() : string;
     protected abstract _getAwsApiVersion()  : string;
 
-    private getEnvironmentRegion() : string {
+    private static getEnvironmentRegion() : string {
         if (process.env.AWS_REGION) {
             return process.env.AWS_REGION;
         } else if (process.env.AWS_DEFAULT_REGION) {
@@ -139,11 +143,11 @@ export abstract class Tagger  {
         }
     }
 
-    protected  getAwsFunction(useEnviornmentForRegion? : boolean) : any {
+    protected  getAwsFunction(useEnvironmentForRegion? : boolean) : any {
         if (this.awsFunction === null) {
             let regionToUse = this.config.region;
-            if (useEnviornmentForRegion) {
-                regionToUse = this.getEnvironmentRegion();
+            if (useEnvironmentForRegion) {
+                regionToUse = Tagger.getEnvironmentRegion();
             }
 
             this.awsFunction = new AWS[this._getAwsLibraryName()]({
@@ -160,7 +164,7 @@ export abstract class Tagger  {
 
     private checkLoaded() {
         if ( typeof this._loadedTags === null ) {
-            throw new Error('Must call load() first');
+            throw new Error("Must call load() first");
         }
     }
 
@@ -174,13 +178,13 @@ export abstract class Tagger  {
         this._cachedTags = tagMap;
     }
 
-    setTags(tags) {
+    setTags(tags) : object {
         this._cachedTags = tags;
         this._loadedTags = {...tags};
-        this._cachedTags;
+        return this._cachedTags;
     }
-    setTagKeyValueArray(keyValueArray) {
-        this._cachedTags = this._akvToMap(keyValueArray);
+    setTagKeyValueArray(keyValueArray : []) {
+        this._cachedTags = Tagger._akvToMap(keyValueArray);
         this._loadedTags = {...this._cachedTags};
         return this._cachedTags;
     }
@@ -207,7 +211,7 @@ export abstract class Tagger  {
         let tagsToUpdate = {};
         for (let key in this._loadedTags) {
             if (key in this._cachedTags) {
-                if (this._loadedTags[key] != this._cachedTags[key]) {
+                if (this._cachedTags[key] !== this._loadedTags[key]) {
                     tagsToUpdate[key] = this._cachedTags[key];
                 }
             } else {
@@ -219,7 +223,7 @@ export abstract class Tagger  {
                 tagsToUpdate[key] = this._cachedTags[key];
             }
         }
-        await retry(this, '_updateAndDeleteTags', [tagsToUpdate, keysToDelete]);
+        await retry(this, "_updateAndDeleteTags", [tagsToUpdate, keysToDelete]);
         return;
     }
 
@@ -234,28 +238,27 @@ export abstract class Tagger  {
         return Promise.all(promises);
     }
 
-    protected _akvToMap(arrayOfKeyValues : object[]) : object {
-        let newdata = {};
+    protected static _akvToMap(arrayOfKeyValues : object[]) : object {
+        let newData = {};
         arrayOfKeyValues.forEach(function (element) {
-            newdata[element['Key']] = element['Value'];
+            newData[element["Key"]] = element["Value"];
         });
-        return newdata;
+        return newData;
     };
 
-    protected _kvMapToArray(tagMap : object) : object[] {
-        let newarray = [];
+    protected static _kvMapToArray(tagMap : object) : object[] {
+        let newArray = [];
         for (let key in tagMap) {
-            newarray.push({'Key': key, 'Value': tagMap[key]});
+            newArray.push({"Key": key, "Value": tagMap[key]});
         }
-        return newarray;
+        return newArray;
     }
 
-    protected _keyListToListMap(tags : object[]) : object[] {
-        let newlist = [];
+    protected static _keyListToListMap(tags : object[]) : object[] {
+        let newList = [];
         tags.forEach(function (key) {
-            newlist.push({'Key': key})
+            newList.push({"Key": key})
         });
-        return newlist;
+        return newList;
     }
-
-};
+}

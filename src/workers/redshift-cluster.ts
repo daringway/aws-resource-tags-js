@@ -1,11 +1,11 @@
-'use strict';
+"use strict";
 
 import { Tagger, register }  from "./base";
 
 class RedshiftTagger extends Tagger {
 
-    protected _getAwsLibraryName() : string { return 'Redshift'; };
-    protected _getAwsApiVersion () : string { return '2012-12-01'; };
+    protected _getAwsLibraryName() : string { return "Redshift"; };
+    protected _getAwsApiVersion () : string { return "2012-12-01"; };
 
     protected async _serviceGetTags() : Promise<object> {
         let params = {
@@ -16,9 +16,9 @@ class RedshiftTagger extends Tagger {
             .then((data) => {
 
                 let tags = {};
-                data['TaggedResources'].forEach( (iData) => {
-                    let tag = iData['Tag']
-                    tags[tag['Key']] = tag['Value'];
+                data["TaggedResources"].forEach( (iData) => {
+                    let tag = iData["Tag"];
+                    tags[tag["Key"]] = tag["Value"];
                 });
                 resolve(tags);
             }).catch( (e) => {
@@ -30,7 +30,7 @@ class RedshiftTagger extends Tagger {
     protected async _serviceUpdateTags(tags) {
         let params = {
             ResourceName: this.config.resourceArn,
-            Tags: this._kvMapToArray(tags)
+            Tags: Tagger._kvMapToArray(tags)
         };
         return this.getAwsFunction().createTags(params).promise();
     }
@@ -44,4 +44,4 @@ class RedshiftTagger extends Tagger {
     }
 }
 
-register(RedshiftTagger, 'redshift', 'cluster');
+register(RedshiftTagger, "redshift", "cluster");

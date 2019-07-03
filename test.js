@@ -29,7 +29,7 @@ TagFilters: [
 //     'ec2:instance'
 // ]
 
-// searchParams = {};
+searchParams = {};
 
 let every = 4;
 let count = every;
@@ -70,26 +70,26 @@ resourceTagFactory.forEachTagger(searchParams, (tagger) => {
     console.log("made it");
 })
 
-testArns.forEach(function(arn) {
-    let tagger = resourceTagFactory.getTaggerByArn(arn);
-    // console.log('getting tags   ', arn);
-    tagger.load().then(function (tags) {
-        // console.log(arn, tags['owner']);
-        // console.log(tags);
-        console.log(tags['tagger'], arn)
-        tags['tagger'] = tag_value;
-        // delete tags['tagger'];
-    }).catch((e) => {
-        if (e.code == 'ResourceNotFoundFault') {
-            console.log("Skipping, resource not found ", arn);
-        } else {
-            console.log("**** uncaught ", e.code, e.message)
-        }
-    }).finally(() => {
-        // console.log("FINAL:", tagger.tags);
-        tagger.save();
-    });
-});
+// testArns.forEach(function(arn) {
+//     let tagger = resourceTagFactory.getTaggerByArn(arn);
+//     // console.log('getting tags   ', arn);
+//     tagger.load().then(function (tags) {
+//         // console.log(arn, tags['owner']);
+//         // console.log(tags);
+//         console.log(tags['tagger'], arn)
+//         tags['tagger'] = tag_value;
+//         // delete tags['tagger'];
+//     }).catch((e) => {
+//         if (e.code == 'ResourceNotFoundFault') {
+//             console.log("Skipping, resource not found ", arn);
+//         } else {
+//             console.log("**** uncaught ", e.code, e.message)
+//         }
+//     }).finally(() => {
+//         // console.log("FINAL:", tagger.tags);
+//         tagger.save();
+//     });
+// });
 
 // const configservice = new AWS.ConfigService({region: 'us-east-1'});
 // while (true) {

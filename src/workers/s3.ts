@@ -1,18 +1,18 @@
-'use strict';
+"use strict";
 
 import { Tagger, register  }  from "./base";
 
 class S3Tagger extends Tagger {
 
-    protected _getAwsLibraryName() : string { return  'S3'; };
-    protected _getAwsApiVersion () : string { return  '2006-03-01'; };
-
+    protected _getAwsLibraryName() : string { return  "S3"; };
+    protected _getAwsApiVersion () : string { return  "2006-03-01"; };
+    
     protected async getResourceRegion() : Promise<string> {
-        var params = {
+        let params = {
             Bucket: this.config.resourceId
         };
         let data = await this.getAwsFunction(true).getBucketLocation(params).promise();
-        return data['LocationConstraint'];
+        return data["LocationConstraint"];
     }
 
     protected async _serviceGetTags() : Promise<object> {
@@ -21,7 +21,7 @@ class S3Tagger extends Tagger {
         };
         return this.getAwsFunction().getBucketTagging(params).promise()
             .then((data) => {
-                return this._akvToMap(data['TagSet']);
+                return Tagger._akvToMap(data["TagSet"]);
             });
     };
 
@@ -34,10 +34,11 @@ class S3Tagger extends Tagger {
         let params = {
             Bucket: this.config.resourceId,
             Tagging: {
-                TagSet: this._kvMapToArray(this.tags)
+                TagSet: Tagger._kvMapToArray(this.tags)
             }
         };
-        return this.getAwsFunction().putBucketTagging(params).promise()
+        // @ts-ignore
+        return this.getAwsFunction().putBucketTagging(params).promise();
     }
 
     // Overriding updateAndDeleteTags so these are not used by base class, need handle abstract
@@ -48,7 +49,7 @@ class S3Tagger extends Tagger {
     }
 }
 
-register(S3Tagger, 's3');
+register(S3Tagger, "s3");
 
 
 

@@ -1,12 +1,11 @@
-'use strict';
+"use strict";
 
 import { Tagger, register }  from "./base";
 
 class CloudfrontDistributionTagger extends Tagger {
 
-    protected _getAwsLibraryName() : string { return 'CloudFront'; };
-    protected _getAwsApiVersion()  : string { return '2018-11-05'; };
-
+    protected _getAwsLibraryName() : string { return "CloudFront"; };
+    protected _getAwsApiVersion()  : string { return "2018-11-05"; };
 
     protected async _serviceGetTags() : Promise<object> {
         let params = {
@@ -16,7 +15,7 @@ class CloudfrontDistributionTagger extends Tagger {
         let aws = this.getAwsFunction();
         return aws.listTagsForResource(params).promise()
             .then((data) => {
-                return this._akvToMap(data['Tags']['Items']);
+                return Tagger._akvToMap(data["Tags"]["Items"]);
             });
     };
 
@@ -24,14 +23,11 @@ class CloudfrontDistributionTagger extends Tagger {
         let params = {
             Resource: this.config.resourceArn,
             Tags: {
-                Items: this._kvMapToArray(tags),
+                Items: Tagger._kvMapToArray(tags),
             }
         };
 
-        return this.getAwsFunction().tagResource(params).promise()
-            .then((data) => {
-                return;
-            });
+        return this.getAwsFunction().tagResource(params).promise();
     };
 
     protected async _serviceDeleteTags(tags) {
@@ -42,11 +38,9 @@ class CloudfrontDistributionTagger extends Tagger {
             }
         };
 
-        return this.getAwsFunction().untagResource(params).promise()
-            .then((data) => {
-                return;
-            });
-    }
-};
+        return this.getAwsFunction().untagResource(params).promise();
 
-register(CloudfrontDistributionTagger, 'cloudfront', 'distribution');
+    };
+}
+
+register(CloudfrontDistributionTagger, "cloudfront", "distribution");
