@@ -13,6 +13,10 @@ function clean() {
     })
 }
 
+function lint() {
+    sh("npx eslint ./src/**/*", {nopipe: true});
+}
+
 function test() {
     build();
     console.log( "********************************");
@@ -41,6 +45,7 @@ function publish() {
 }
 
 cli({
+    lint,
     clean,
     build,
     test,
