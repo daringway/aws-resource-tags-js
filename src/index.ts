@@ -32,17 +32,27 @@ function getRegion(region : string) : string {
     return null;
 }
 
-function taggerCallback(callback, resourceData, region) {
+async function taggerCallback(callback, resourceData, region) {
     let tagger = getTaggerByArn(resourceData.ResourceARN, region);
     if ( tagger === null ) {
         return null;
     }
 
     tagger.setTagKeyValueArray(resourceData.Tags);
-    return callback(tagger);
+    try {
+        await callback(tagger);
+    } catch (err) {
+        if (err.endsWith(".NotFound")) {
+            // Sometimes the resource will delete between listing and the callback, ignore these.
+            return;
+        } else {
+            throw err;
+        }
+    }
 }
 
 // Uses the ResourceGroupsTaggingApi.getResources
+// Optional
 export async function forEachTagger(params : object, callback : Function, region? : string)  {
     let foundRegion = getRegion(region);
 
@@ -55,8 +65,13 @@ export async function forEachTagger(params : object, callback : Function, region
     params["ResourcesPerPage"] = 100;
     let data = await rgTagApi.getResources(params).promise();
 
-    let results = data["ResourceTagMappingList"].map(x => taggerCallback(callback, x, foundRegion));
-    await Promise.all(results);
+    // Want to do this in sequence otherwise AWS API get unhappy
+    for (var i = 0; i < data["ResourceTagMappingList"].length; i++) {
+        let x = data["ResourceTagMappingList"][i];
+        await taggerCallback(callback, x, foundRegion);
+    }
+    // let results = data["ResourceTagMappingList"].map(x => taggerCallback(callback, x, foundRegion));
+    // await Promise.all(results);
 
     if (data["PaginationToken"]) {
         params["PaginationToken"] = data["PaginationToken"];
@@ -76,10 +91,11 @@ export function getTaggerByArn(resourceArn : string, resourceRegion? : string): 
         region = resourceRegion;
     }
 
+    // TODO Move this to be a function in each module to iterate through here.
     if (["lambda", "rds", "redshift"].indexOf(service) >= 0) {
         resourceType = resourceArn.split(":")[5];
         resourceId = resourceArn.split(":")[6];
-    } else if (["ec2", "subnet", "cloudfront", "elasticloadbalancing", "dynamodb", "es"].indexOf(service) >= 0) {
+    } else if (["ec2", "subnet", "cloudfront", "elasticloadbalancing", "dynamodb", "es", "elasticmapreduce"].indexOf(service) >= 0) {
         let resource = resourceArn.split(":")[5];
         resourceType = resource.split("/")[0];
         resourceId = resource.split("/")[1];

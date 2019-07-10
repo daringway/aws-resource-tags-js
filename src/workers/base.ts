@@ -2,16 +2,13 @@
 
 import * as AWS from "aws-sdk";
 
-let throttleRetry = require("promise-ratelimit")(50);
-let backOffTime = 250;
-let maxBackOffTime = 500;
-let maxRetries = 10;
+// Don't implement elasticloadbalancing-loadbalancer as there is now way to tell V1 from V2 in ARN.
 
 export interface TaggerConfig {
-    readonly resourceArn     : string,
-             region          : string,
-    readonly accountId       : string,
-    readonly resourceId      : string,
+    readonly resourceArn : string,
+             region      : string,
+    readonly accountId   : string,
+    readonly resourceId  : string
 }
 
 export interface AboutTagger {
@@ -20,13 +17,32 @@ export interface AboutTagger {
     readonly resourceType   : string,
 }
 
+export interface TaggerLimits {
+    rateLimit         : number,
+    rateIncrease?     : number,
+    maxRetries?       : number,
+    maxRateLimit?     : number,
+    throttleFunction? : any
+}
+
+// let throttleRetry = require("promise-ratelimit")(50);
+let defaultMaxRetries = 25;
+let defaultRateIncrease = 25;
+let defaultMaxRateLimit = 2000;
+
+let baseLimits : TaggerLimits = {
+    rateLimit   : 0
+};
+
 export interface Tags {
     [key: string]: string
 }
 
 let taggers: Record<string, AboutTagger> = {};
 
-export function register(taggerClass : typeof Tagger, service : string, resourceType? : string) {
+export function register(taggerClass   : typeof Tagger,
+                         service       : string,
+                         resourceType  : string = undefined) {
 
     let config : AboutTagger = {
         taggerClass  : taggerClass,
@@ -63,6 +79,10 @@ export function getWorkerInstance(resourceArn : string,
     if ( ["cloudformation", "events"].includes(service) ) {
         return null;
     }
+    // if (("elasticloadbalancing" === service) && (resourceType === "loadbalancer")) {
+    // //    Classic load balancer not support
+    //     return null;
+    // }
 
     let taggerClass = getTaggerClass(service, resourceType);
 
@@ -81,35 +101,42 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function retry(obj, fn, fnArgs, retries=maxRetries, err=null) {
-    return new Promise( (resolve, reject) => {
-        if (retries == 0) {
-            reject(err);
+async function retry(obj : Tagger, fn, fnArgs, retries : number = 0) {
+
+    if (! obj.getLimits().throttleFunction) {
+        obj.getLimits().throttleFunction = require("promise-ratelimit")(obj.getLimits().rateLimit);
+    }
+    let prev = obj.getLimits().rateLimit;
+    await obj.getLimits().throttleFunction();
+    try {
+        let x = await obj[fn](...fnArgs);
+        return x;
+    } catch (error) {
+        if ((retries < obj.getLimits().maxRetries ? obj.getLimits().maxRetries : defaultMaxRetries)
+            && error.retryable) {
+
+            let maxRate = obj.getLimits().maxRateLimit ? obj.getLimits().maxRateLimit : defaultMaxRateLimit;
+            let increase : number;
+
+            if (error.retryDelay > 0) {
+                increase = error.retryDelay * 2;
+            } else {
+                increase = obj.getLimits().rateIncrease ? obj.getLimits().rateIncrease : defaultRateIncrease;
+            }
+            obj.getLimits().rateLimit =  obj.getLimits().rateLimit + increase;
+            if ( obj.getLimits().rateLimit > maxRate ) {
+                 obj.getLimits().rateLimit = maxRate;
+                 console.log("WARN max rate limit reached with ", obj.config.resourceArn);
+            }
+            obj.getLimits().throttleFunction = require("promise-ratelimit")(obj.getLimits().rateLimit);
+            await sleep(obj.getLimits().rateLimit);
+            await retry(obj, fn, fnArgs, retries + 1);
+            return;
+
         } else {
-            return throttleRetry().then(() => {
-                obj[fn](...fnArgs)
-                    .then(x => resolve(x))
-                    .catch(err => {
-                        if (err.retryDelay > 0) {
-                            if (backOffTime < maxBackOffTime) {
-                                // First time through the backOffTime won"t increase
-                                backOffTime += Math.ceil(err.retryDelay) * (maxRetries - retries);
-                            }
-                            sleep(backOffTime).then(() => {
-                                retry(obj, fn, fnArgs, (retries - 1), err).then(() => {
-                                    resolve()
-                                })
-                                    .catch((err) => {
-                                        reject(err);
-                                    })
-                            });
-                        } else {
-                            return reject(err);
-                        }
-                    });
-            });
+            throw error;
         }
-    });
+    }
 }
 
 export abstract class Tagger  {
@@ -145,6 +172,10 @@ export abstract class Tagger  {
         } else {
             return "us-east-1";
         }
+    }
+
+    public getLimits() : TaggerLimits {
+        return baseLimits;
     }
 
     protected  getAwsFunction(useEnvironmentForRegion? : boolean) : any {
@@ -227,19 +258,26 @@ export abstract class Tagger  {
                 tagsToUpdate[key] = this._cachedTags[key];
             }
         }
-        await retry(this, "_updateAndDeleteTags", [tagsToUpdate, keysToDelete]);
+
+        try {
+            await retry(this, "_updateAndDeleteTags", [tagsToUpdate, keysToDelete]);
+        } catch (err) {
+            throw err;
+        }
         return;
     }
 
     protected async _updateAndDeleteTags(updateMap : Tags, deleteList : string[]) {
-        let promises = [];
-        if (Object.keys(deleteList).length > 0) {
-            promises.push(this._serviceDeleteTags(deleteList));
+        try {
+            if (Object.keys(deleteList).length > 0) {
+                await this._serviceDeleteTags(deleteList);
+            }
+            if (Object.keys(updateMap).length > 0) {
+                await this._serviceUpdateTags(updateMap);
+            }
+        } catch (err) {
+            throw err;
         }
-        if (Object.keys(updateMap).length > 0) {
-            promises.push(this._serviceUpdateTags(updateMap));
-        }
-        return Promise.all(promises);
     }
 
     protected static _akvToMap(arrayOfKeyValues : object[]) : Tags {

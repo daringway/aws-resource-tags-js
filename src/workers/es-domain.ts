@@ -2,7 +2,6 @@
 
 import { Tagger, Tags, register }  from "./base";
 
-
 class ElasticSearchTagger extends Tagger {
 
     protected _getAwsLibraryName() : string { return "ES"; };
