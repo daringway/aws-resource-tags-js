@@ -1,6 +1,6 @@
-"use strict";
+'use strict';
 
-import * as AWS from "aws-sdk";
+import * as AWS from 'aws-sdk';
 
 // Don't implement elasticloadbalancing-loadbalancer as there is now way to tell V1 from V2 in ARN.
 
@@ -61,21 +61,21 @@ export function register(taggerClass   : typeof Tagger,
     };
 
     if (config.service && config.resourceType) {
-        taggers[config.service + "-" + config.resourceType] = config;
+        taggers[config.service + '-' + config.resourceType] = config;
     } else if (config.service) {
         taggers[config.service] = config;
     } else {
-        taggers["default"] = config;
+        taggers['default'] = config;
     }
 }
 
 function getTaggerClass(service, resourceType) : typeof Tagger {
-    if ( service + "-" + resourceType in taggers) {
-        return taggers[service + "-" + resourceType].taggerClass;
+    if ( service + '-' + resourceType in taggers) {
+        return taggers[service + '-' + resourceType].taggerClass;
     } else if ( service in taggers) {
         return taggers[service].taggerClass;
     } else {
-        return taggers["default"].taggerClass;
+        return taggers['default'].taggerClass;
     }
 }
 
@@ -86,7 +86,7 @@ export function getWorkerInstance(resourceArn : string,
                                   resourceType : string,
                                   resourceId : string ) : Tagger | null {
 
-    if ( ["cloudformation", "events"].includes(service) ) {
+    if ( ['cloudformation', 'events'].includes(service) ) {
         return null;
     }
 
@@ -125,15 +125,15 @@ async function retry(obj : Tagger, fn, fnArgs, retries : number = 0) {
 
             if ( obj.getAws().currentRate > obj.getAws().config.maxRateLimit ) {
                  obj.getAws().currentRate = obj.getAws().config.maxRateLimit;
-                 console.log("WARN max rate limit reached with", obj.config.resourceArn);
+                 console.log('WARN max rate limit reached with', obj.config.resourceArn);
             }
-            obj.getAws().throttleFunction = require("promise-ratelimit")(obj.getAws().currentRate);
+            obj.getAws().throttleFunction = require('promise-ratelimit')(obj.getAws().currentRate);
             await sleep(obj.getAws().currentRate);
             await retry(obj, fn, fnArgs, retries + 1);
             return;
 
         } else {
-            console.log("ERROR max retries reached with", obj.config.resourceArn);
+            console.log('ERROR max retries reached with', obj.config.resourceArn);
             throw error;
         }
     }
@@ -166,7 +166,7 @@ export abstract class Tagger  {
         } else if (process.env.AWS_DEFAULT_REGION) {
             return process.env.AWS_DEFAULT_REGION
         } else {
-            return "us-east-1";
+            return 'us-east-1';
         }
     }
 
@@ -190,7 +190,7 @@ export abstract class Tagger  {
             let apiConfig      = this.getAwsApiConfig();
             let awsLibraryName = apiConfig.awsLibraryName;
 
-            let keyName = regionToUse + "-" + awsLibraryName;
+            let keyName = regionToUse + '-' + awsLibraryName;
 
             if (!(keyName in awsApis)) {
                 let newConfig : AwsApiConfig = {
@@ -207,7 +207,7 @@ export abstract class Tagger  {
                                             apiVersion: newConfig.awsApiVersion,
                                             region: regionToUse
                                         }),
-                    throttleFunction : require("promise-ratelimit")(newConfig.rateLimit),
+                    throttleFunction : require('promise-ratelimit')(newConfig.rateLimit),
                     config           : newConfig,
                     currentRate      : newConfig.rateLimit
                 }
@@ -224,7 +224,7 @@ export abstract class Tagger  {
 
     private checkLoaded() {
         if ( typeof this._loadedTags === null ) {
-            throw new Error("Must call load() first");
+            throw new Error('Must call load() first');
         }
     }
 
@@ -285,7 +285,7 @@ export abstract class Tagger  {
         }
 
         try {
-            await retry(this, "_updateAndDeleteTags", [tagsToUpdate, keysToDelete]);
+            await retry(this, '_updateAndDeleteTags', [tagsToUpdate, keysToDelete]);
             this._loadedTags = {...this._cachedTags};
         } catch (err) {
             throw err;
@@ -309,7 +309,7 @@ export abstract class Tagger  {
     protected static _akvToMap(arrayOfKeyValues : object[]) : Tags {
         let newData = {};
         arrayOfKeyValues.forEach(function (element) {
-            newData[element["Key"]] = element["Value"];
+            newData[element['Key']] = element['Value'];
         });
         return newData;
     };
@@ -317,7 +317,7 @@ export abstract class Tagger  {
     protected static _kvMapToArray(tagMap : object) : object[] {
         let newArray = [];
         for (let key in tagMap) {
-            newArray.push({"Key": key, "Value": tagMap[key]});
+            newArray.push({'Key': key, 'Value': tagMap[key]});
         }
         return newArray;
     }
@@ -325,7 +325,7 @@ export abstract class Tagger  {
     protected static _keyListToListMap(tags : string[]) : object[] {
         let newList = [];
         tags.forEach(function (key) {
-            newList.push({"Key": key})
+            newList.push({'Key': key})
         });
         return newList;
     }

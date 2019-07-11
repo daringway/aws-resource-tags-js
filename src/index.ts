@@ -1,23 +1,23 @@
-"use strict";
+'use strict';
 
-import * as AWS from "aws-sdk";
-import "source-map-support/register"
-import { Tagger, getWorkerInstance } from "./workers/base";
+import * as AWS from 'aws-sdk';
+import 'source-map-support/register'
+import { Tagger, getWorkerInstance } from './workers/base';
 // NOTE workers/index.ts is dynamically generated at build time, look in taskfile.js for the magic
-import "./workers/";
+import './workers/';
 
 
 // class TagWorkerNotFoundError extends Error {
 //     constructor(workerName, arn) {
-//         super("Tagger " + workerName + " not found for " + arn);
-//         this.name = "TagWorkerNotFoundError";
+//         super('Tagger ' + workerName + ' not found for ' + arn);
+//         this.name = 'TagWorkerNotFoundError';
 //     }
 // }
 
 // class ResourceNotFoundError extends Error {
 //     constructor(arn) {
-//         super("Resource not found: " + arn);
-//         this.name = "TagWorkerNotFoundError";
+//         super('Resource not found: ' + arn);
+//         this.name = 'TagWorkerNotFoundError';
 //     }
 // }
 
@@ -42,7 +42,7 @@ async function taggerCallback(callback, resourceData, region) {
     try {
         await callback(tagger);
     } catch (err) {
-        if (err.code.endsWith(".NotFound")) {
+        if (err.code.endsWith('.NotFound')) {
             // Sometimes the resource will delete between listing and the callback, ignore these.
             return;
         } else {
@@ -57,33 +57,33 @@ export async function forEachTagger(params : object, callback : Function, region
     let foundRegion = getRegion(region);
 
     if (foundRegion === null) {
-        throw new Error("Must pass in region or set AWS_REGION environment variable");
+        throw new Error('Must pass in region or set AWS_REGION environment variable');
     }
 
-    let rgTagApi = new AWS["ResourceGroupsTaggingAPI"]({apiVersion: "2017-01-26", region:foundRegion});
+    let rgTagApi = new AWS['ResourceGroupsTaggingAPI']({apiVersion: '2017-01-26', region:foundRegion});
 
-    params["ResourcesPerPage"] = 100;
+    params['ResourcesPerPage'] = 100;
     let data = await rgTagApi.getResources(params).promise();
 
     // Want to do this in sequence otherwise AWS API get unhappy
-    for (var i = 0; i < data["ResourceTagMappingList"].length; i++) {
-        let x = data["ResourceTagMappingList"][i];
+    for (var i = 0; i < data['ResourceTagMappingList'].length; i++) {
+        let x = data['ResourceTagMappingList'][i];
         await taggerCallback(callback, x, foundRegion);
     }
-    // let results = data["ResourceTagMappingList"].map(x => taggerCallback(callback, x, foundRegion));
+    // let results = data['ResourceTagMappingList'].map(x => taggerCallback(callback, x, foundRegion));
     // await Promise.all(results);
 
-    if (data["PaginationToken"]) {
-        params["PaginationToken"] = data["PaginationToken"];
+    if (data['PaginationToken']) {
+        params['PaginationToken'] = data['PaginationToken'];
         await forEachTagger(params, callback);
     }
 
 }
 
 export function getTaggerByArn(resourceArn : string, resourceRegion? : string): Tagger | null{
-    let service = resourceArn.split(":")[2];
-    let region = resourceArn.split(":")[3];
-    let accountId = resourceArn.split(":")[4];
+    let service = resourceArn.split(':')[2];
+    let region = resourceArn.split(':')[3];
+    let accountId = resourceArn.split(':')[4];
     let resourceType = null;
     let resourceId = null;
 
@@ -92,19 +92,19 @@ export function getTaggerByArn(resourceArn : string, resourceRegion? : string): 
     }
 
     // TODO Move this to be a function in each module to iterate through here.
-    if (["lambda", "rds", "redshift"].indexOf(service) >= 0) {
-        resourceType = resourceArn.split(":")[5];
-        resourceId = resourceArn.split(":")[6];
-    } else if (["ec2", "subnet", "cloudfront", "elasticloadbalancing", "dynamodb", "es", "elasticmapreduce"].indexOf(service) >= 0) {
-        let resource = resourceArn.split(":")[5];
-        resourceType = resource.split("/")[0];
-        resourceId = resource.split("/")[1];
-    } else if (["s3"].indexOf(service) >= 0) {
+    if (['lambda', 'rds', 'redshift'].indexOf(service) >= 0) {
+        resourceType = resourceArn.split(':')[5];
+        resourceId = resourceArn.split(':')[6];
+    } else if (['ec2', 'subnet', 'cloudfront', 'elasticloadbalancing', 'dynamodb', 'es', 'elasticmapreduce'].indexOf(service) >= 0) {
+        let resource = resourceArn.split(':')[5];
+        resourceType = resource.split('/')[0];
+        resourceId = resource.split('/')[1];
+    } else if (['s3'].indexOf(service) >= 0) {
         resourceType = service;
-        resourceId = resourceArn.split(":")[5];
+        resourceId = resourceArn.split(':')[5];
     } else {
-        resourceType = "unknown";
-        resourceId = "unknown";
+        resourceType = 'unknown';
+        resourceId = 'unknown';
     }
 
     return getWorkerInstance(resourceArn, service, region, accountId, resourceType, resourceId);

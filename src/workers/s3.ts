@@ -1,13 +1,13 @@
-"use strict";
+'use strict';
 
-import {Tagger, Tags, register, AwsApiConfig} from "./base";
+import {Tagger, Tags, register, AwsApiConfig} from './base';
 
 class S3Tagger extends Tagger {
 
     protected getAwsApiConfig(): AwsApiConfig {
         return {
-            awsLibraryName : "S3",
-            awsApiVersion  : "2006-03-01"
+            awsLibraryName : 'S3',
+            awsApiVersion  : '2006-03-01'
         };
     };
 
@@ -16,15 +16,15 @@ class S3Tagger extends Tagger {
             Bucket: this.config.resourceId
         };
         let data = await this.getResourceAwsFunction().getBucketLocation(params).promise();
-        return data["LocationConstraint"];
+        return data['LocationConstraint'];
     }
 
     protected async _serviceGetTags() : Promise<Tags> {
         let params = {
             Bucket: this.config.resourceId
         };
-        let data = await this.getAws().awsFunction.getBucketTagging(params).promise();
-        return Tagger._akvToMap(data["TagSet"]);
+        let data = await this.getAwsFunction().getBucketTagging(params).promise();
+        return Tagger._akvToMap(data['TagSet']);
 
     };
 
@@ -40,7 +40,7 @@ class S3Tagger extends Tagger {
                 TagSet: Tagger._kvMapToArray(this.tags)
             }
         };
-        return this.getAws().awsFunction.putBucketTagging(params).promise();
+        return this.getAwsFunction().putBucketTagging(params).promise();
     }
 
     // Overriding updateAndDeleteTags so these are not used by base class, need handle abstract
@@ -51,7 +51,7 @@ class S3Tagger extends Tagger {
     }
 }
 
-register(S3Tagger, "s3");
+register(S3Tagger, 's3');
 
 
 

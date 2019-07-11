@@ -1,13 +1,13 @@
-"use strict";
+'use strict';
 
-import {Tagger, Tags, register, AwsApiConfig} from "./base";
+import {Tagger, Tags, register, AwsApiConfig} from './base';
 
 class RDSTagger extends Tagger {
 
     protected getAwsApiConfig(): AwsApiConfig {
         return {
-            awsLibraryName : "RDS",
-            awsApiVersion  : "2014-10-31"
+            awsLibraryName : 'RDS',
+            awsApiVersion  : '2014-10-31'
         };
     };
 
@@ -15,9 +15,9 @@ class RDSTagger extends Tagger {
         let params = {
             ResourceName: this.config.resourceArn
         };
-        return this.getAws().awsFunction.listTagsForResource(params).promise()
+        return this.getAwsFunction().listTagsForResource(params).promise()
             .then((data) => {
-                return Tagger._akvToMap(data["TagList"]);
+                return Tagger._akvToMap(data['TagList']);
             });
     };
 
@@ -27,7 +27,7 @@ class RDSTagger extends Tagger {
             Tags: Tagger._kvMapToArray(tags)
         };
 
-        return this.getAws().awsFunction.addTagsToResource(params).promise();
+        return this.getAwsFunction().addTagsToResource(params).promise();
     };
 
     protected async _serviceDeleteTags(tagKeys : string[]) {
@@ -36,8 +36,8 @@ class RDSTagger extends Tagger {
             TagKeys: tagKeys
         };
 
-        return this.getAws().awsFunction.removeTagsFromResource(params).promise();
+        return this.getAwsFunction().removeTagsFromResource(params).promise();
     }
 }
 
-register(RDSTagger, "rds", "cluster");
+register(RDSTagger, 'rds', 'cluster');

@@ -1,6 +1,6 @@
-"use strict";
+'use strict';
 
-import {Tagger, Tags, register, AwsApiConfig} from "./base";
+import {Tagger, Tags, register, AwsApiConfig} from './base';
 
 export default class Ec2InstanceTagger extends Tagger {
 
@@ -8,8 +8,8 @@ export default class Ec2InstanceTagger extends Tagger {
 
     protected getAwsApiConfig(): AwsApiConfig {
         return {
-            awsLibraryName : "EC2",
-            awsApiVersion  : "2016-11-15"
+            awsLibraryName : 'EC2',
+            awsApiVersion  : '2016-11-15'
         };
     };
 
@@ -17,15 +17,15 @@ export default class Ec2InstanceTagger extends Tagger {
         let params = {
             Filters: [
                 {
-                    Name: "resource-id",
+                    Name: 'resource-id',
                     Values: [
                         this.config.resourceId
                     ]
                 }
             ]
         };
-        let data = await this.getAws().awsFunction.describeTags(params).promise();
-        return Tagger._akvToMap(data["Tags"]);
+        let data = await this.getAwsFunction().describeTags(params).promise();
+        return Tagger._akvToMap(data['Tags']);
     };
 
     protected async _serviceUpdateTags(tags : Tags) {
@@ -35,7 +35,7 @@ export default class Ec2InstanceTagger extends Tagger {
             ],
             Tags: Tagger._kvMapToArray(tags)
         };
-        return this.getAws().awsFunction.createTags(params).promise();
+        return this.getAwsFunction().createTags(params).promise();
     };
 
     async isTaggableState(): Promise<boolean> {
@@ -46,14 +46,15 @@ export default class Ec2InstanceTagger extends Tagger {
                 ]
             };
             try {
+                await this.getAws().throttleFunction();
                 let data = await this.getAwsFunction().describeInstances(params).promise();
-                this.state = data["Reservations"][0]["Instances"][0]["State"]["Name"];
+                this.state = data['Reservations'][0]['Instances'][0]['State']['Name'];
             } catch(err) {
                 throw err;
             }
 
         }
-        return ["running", "stopping", "stopped", "pending"].includes(this.state)
+        return ['running', 'stopping', 'stopped', 'pending'].includes(this.state)
     }
 
     protected async _serviceDeleteTags(tagList : string[]) {
@@ -63,8 +64,8 @@ export default class Ec2InstanceTagger extends Tagger {
             ],
             Tags: Tagger._keyListToListMap(tagList)
         };
-        return this.getAws().awsFunction.deleteTags(params).promise();
+        return this.getAwsFunction().deleteTags(params).promise();
     };
 }
 
-register(Ec2InstanceTagger, "ec2", "instance");
+register(Ec2InstanceTagger, 'ec2', 'instance');

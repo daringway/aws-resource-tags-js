@@ -1,6 +1,6 @@
 {
   "name": "aws-resource-tags",
-  "version": "0.2.38",
+  "version": "0.2.40",
   "description": "Javascript library for access AWS Resource Tags",
   "main": "dist/index.js",
   "files": [

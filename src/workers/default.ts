@@ -1,20 +1,20 @@
-"use strict";
+'use strict';
 
-import {Tagger, Tags, register, AwsApiConfig} from "./base";
+import {Tagger, Tags, register, AwsApiConfig} from './base';
 
 class DefaultTagger extends Tagger {
 
     protected getAwsApiConfig(): AwsApiConfig {
         return {
-            awsLibraryName : "ResourceGroupsTaggingAPI",
-            awsApiVersion  : "2017-01-26",
+            awsLibraryName : 'ResourceGroupsTaggingAPI',
+            awsApiVersion  : '2017-01-26',
             rateLimit      : 100
         };
     };
 
     protected async _serviceGetTags() : Promise<Tags> {
         return new Promise((resolve, reject) => {
-            reject("_serviceGetTags not implemented");
+            reject('_serviceGetTags not implemented');
         });
     };
 
@@ -26,16 +26,16 @@ class DefaultTagger extends Tagger {
                 ],
                 Tags: tagMapUpdates
             };
-            this.getAws().awsFunction.tagResources(params).promise()
+            this.getAwsFunction().tagResources(params).promise()
                 .then((data) => {
-                    if (Object.keys(data["FailedResourcesMap"]).length > 0) {
+                    if (Object.keys(data['FailedResourcesMap']).length > 0) {
                         let errorMap = {
-                            name: "TagUpdateError",
-                            code: "FailedResourcesMap",
+                            name: 'TagUpdateError',
+                            code: 'FailedResourcesMap',
                             resource: this.config.resourceArn,
-                            message: data["FailedResourcesMap"][this.config.resourceArn]["ErrorMessage"],
-                            httpCode: data["FailedResourcesMap"][this.config.resourceArn]["StatusCode"],
-                            errorCode: data["FailedResourcesMap"][this.config.resourceArn]["ErrorCode"],
+                            message: data['FailedResourcesMap'][this.config.resourceArn]['ErrorMessage'],
+                            httpCode: data['FailedResourcesMap'][this.config.resourceArn]['StatusCode'],
+                            errorCode: data['FailedResourcesMap'][this.config.resourceArn]['ErrorCode'],
                             retryDelay: 100,
                             retryable: true
                         };
@@ -58,15 +58,15 @@ class DefaultTagger extends Tagger {
                 ],
                 TagKeys: tagsToDeleteList
             };
-            this.getAws().awsFunction.untagResources(params).promise()
+            this.getAwsFunction().untagResources(params).promise()
                 .then( (data) => {
-                    if (Object.keys(data["FailedResourcesMap"]).length > 0) {
+                    if (Object.keys(data['FailedResourcesMap']).length > 0) {
                         reject( {
-                            name: "TagDeleteError",
-                            code: "FailedResourcesMap",
-                            message: data["FailedResourcesMap"]["ErrorMessage"],
-                            httpCode: data["FailedResourcesMap"]["StatusCode"],
-                            errorCode: data["FailedResourcesMap"]["ErrorCode"],
+                            name: 'TagDeleteError',
+                            code: 'FailedResourcesMap',
+                            message: data['FailedResourcesMap']['ErrorMessage'],
+                            httpCode: data['FailedResourcesMap']['StatusCode'],
+                            errorCode: data['FailedResourcesMap']['ErrorCode'],
                             retryDelay: 100,
                             retryable: true
                         });

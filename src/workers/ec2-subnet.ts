@@ -1,7 +1,7 @@
-"use strict";
+'use strict';
 
-import {Tagger, Tags, register, AwsApiConfig} from "./base";
-import Ec2InstanceTagger from "./ec2-instance";
+import {Tagger, Tags, register, AwsApiConfig} from './base';
+import Ec2InstanceTagger from './ec2-instance';
 
 class Ec2SubnetTagger extends Ec2InstanceTagger {
 
@@ -9,15 +9,15 @@ class Ec2SubnetTagger extends Ec2InstanceTagger {
         let params = {
             Filters: [
                 {
-                    Name: "subnet-id",
+                    Name: 'subnet-id',
                     Values: [
                         this.config.resourceId
                     ]
                 }
             ]
         };
-        let data = await this.getAws().awsFunction.describeSubnets(params).promise();
-        return Tagger._akvToMap(data["Subnets"][0]["Tags"]);
+        let data = await this.getAwsFunction().describeSubnets(params).promise();
+        return Tagger._akvToMap(data['Subnets'][0]['Tags']);
     };
 
     async isTaggableState(): Promise<boolean> {
@@ -25,6 +25,6 @@ class Ec2SubnetTagger extends Ec2InstanceTagger {
     }
 }
 
-register(Ec2SubnetTagger, "ec2", "subnet");
+register(Ec2SubnetTagger, 'ec2', 'subnet');
 
 

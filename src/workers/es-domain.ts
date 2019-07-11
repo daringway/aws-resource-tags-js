@@ -1,13 +1,13 @@
-"use strict";
+'use strict';
 
-import {Tagger, Tags, register, AwsApiConfig} from "./base";
+import {Tagger, Tags, register, AwsApiConfig} from './base';
 
 class ElasticSearchTagger extends Tagger {
 
     protected getAwsApiConfig(): AwsApiConfig {
         return {
-            awsLibraryName : "ES",
-            awsApiVersion  : "2015-01-01"
+            awsLibraryName : 'ES',
+            awsApiVersion  : '2015-01-01'
         };
     };
 
@@ -15,8 +15,8 @@ class ElasticSearchTagger extends Tagger {
         let params = {
             ARN: this.config.resourceArn
         };
-        let data = await this.getAws().awsFunction.listTags(params).promise();
-        return Tagger._akvToMap(data["TagList"]);
+        let data = await this.getAwsFunction().listTags(params).promise();
+        return Tagger._akvToMap(data['TagList']);
     };
 
     protected async _serviceUpdateTags(tags : Tags) {
@@ -24,7 +24,7 @@ class ElasticSearchTagger extends Tagger {
             ARN: this.config.resourceArn,
             TagList: Tagger._kvMapToArray(tags)
         };
-        return this.getAws().awsFunction.addTags(params).promise();
+        return this.getAwsFunction().addTags(params).promise();
     };
 
     protected async _serviceDeleteTags(tagKeys : string[]) {
@@ -32,8 +32,8 @@ class ElasticSearchTagger extends Tagger {
             ARN: this.config.resourceArn,
             TagKeys: tagKeys
         };
-        return this.getAws().awsFunction.removeTags(params).promise();
+        return this.getAwsFunction().removeTags(params).promise();
     }
 }
 
-register(ElasticSearchTagger, "es", "domain");
+register(ElasticSearchTagger, 'es', 'domain');

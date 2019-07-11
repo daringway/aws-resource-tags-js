@@ -1,13 +1,13 @@
-"use strict";
+'use strict';
 
-import {Tagger, Tags, register, AwsApiConfig} from "./base";
+import {Tagger, Tags, register, AwsApiConfig} from './base';
 
 class DynamoDBTagger extends Tagger {
 
     protected getAwsApiConfig(): AwsApiConfig {
         return {
-            awsLibraryName : "DynamoDB",
-            awsApiVersion  : "2012-08-10"
+            awsLibraryName : 'DynamoDB',
+            awsApiVersion  : '2012-08-10'
         };
     };
 
@@ -15,8 +15,8 @@ class DynamoDBTagger extends Tagger {
         let params = {
             ResourceArn: this.config.resourceArn
         };
-        let data = await this.getAws().awsFunction.listTagsOfResource(params).promise();
-        return Tagger._akvToMap(data["Tags"]);
+        let data = await this.getAwsFunction().listTagsOfResource(params).promise();
+        return Tagger._akvToMap(data['Tags']);
     };
 
     protected async _serviceUpdateTags(tags : Tags) {
@@ -24,7 +24,7 @@ class DynamoDBTagger extends Tagger {
             ResourceArn: this.config.resourceArn,
             Tags: Tagger._kvMapToArray(tags)
         };
-        return this.getAws().awsFunction.tagResource(params).promise();
+        return this.getAwsFunction().tagResource(params).promise();
     };
 
     protected async _serviceDeleteTags(tagList : string[]) {
@@ -32,8 +32,8 @@ class DynamoDBTagger extends Tagger {
             ResourceArn: this.config.resourceArn,
             TagKeys: tagList
         };
-        return this.getAws().awsFunction.untagResource(params).promise();
+        return this.getAwsFunction().untagResource(params).promise();
     };
 }
 
-register(DynamoDBTagger, "dynamodb", "table");
+register(DynamoDBTagger, 'dynamodb', 'table');
