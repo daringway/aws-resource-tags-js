@@ -1,21 +1,16 @@
 "use strict";
 
-import {Tagger, Tags, register, TaggerLimits} from "./base";
-
-// Want this to be in a different set of limit
-let defaultTypeLimits : TaggerLimits = {
-    rateLimit   : 100
-};
-
+import {Tagger, Tags, register, AwsApiConfig} from "./base";
 
 class DefaultTagger extends Tagger {
 
-    protected _getAwsLibraryName() : string { return "ResourceGroupsTaggingAPI"; };
-    protected _getAwsApiVersion()  : string { return "2017-01-26"; };
-
-    public getLimits(): TaggerLimits {
-        return defaultTypeLimits;
-    }
+    protected getAwsApiConfig(): AwsApiConfig {
+        return {
+            awsLibraryName : "ResourceGroupsTaggingAPI",
+            awsApiVersion  : "2017-01-26",
+            rateLimit      : 100
+        };
+    };
 
     protected async _serviceGetTags() : Promise<Tags> {
         return new Promise((resolve, reject) => {
@@ -31,7 +26,7 @@ class DefaultTagger extends Tagger {
                 ],
                 Tags: tagMapUpdates
             };
-            this.getAwsFunction().tagResources(params).promise()
+            this.getAws().awsFunction.tagResources(params).promise()
                 .then((data) => {
                     if (Object.keys(data["FailedResourcesMap"]).length > 0) {
                         let errorMap = {
@@ -63,7 +58,7 @@ class DefaultTagger extends Tagger {
                 ],
                 TagKeys: tagsToDeleteList
             };
-            this.getAwsFunction().untagResources(params).promise()
+            this.getAws().awsFunction.untagResources(params).promise()
                 .then( (data) => {
                     if (Object.keys(data["FailedResourcesMap"]).length > 0) {
                         reject( {

@@ -42,7 +42,7 @@ async function taggerCallback(callback, resourceData, region) {
     try {
         await callback(tagger);
     } catch (err) {
-        if (err.endsWith(".NotFound")) {
+        if (err.code.endsWith(".NotFound")) {
             // Sometimes the resource will delete between listing and the callback, ignore these.
             return;
         } else {

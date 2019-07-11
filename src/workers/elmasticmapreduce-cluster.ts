@@ -1,38 +1,43 @@
 "use strict";
 
-import {Tagger, Tags, register, TaggerConfig, TaggerLimits} from "./base";
+import {Tagger, Tags, register, AwsApiConfig} from "./base";
 
-let emrLimits : TaggerLimits = {
-    rateLimit   : 125,
-    rateIncrease : 125,
-    maxRateLimit : 2500
-};
 
 export default class EmrClusterTagger extends Tagger {
 
-    protected _getAwsLibraryName() : string { return "EMR"; };
-    protected _getAwsApiVersion () : string { return "2009-03-31"; };
+
+    protected getAwsApiConfig(): AwsApiConfig {
+        return {
+            awsLibraryName : "EMR",
+            awsApiVersion  : "2009-03-31",
+            rateLimit   : 125,
+            rateIncrease : 125,
+            maxRateLimit : 2500
+        };
+    };
 
     private   state : string = null;
-
-    constructor(config : TaggerConfig) {
-        super(config);
-    }
-
-    public getLimits() : TaggerLimits {
-        return emrLimits;
-    }
 
     protected async _serviceGetTags() : Promise<Tags> {
         let params = {
             ClusterId: this.config.resourceId
         };
-        let data = await this.getAwsFunction().describeCluster(params).promise();
+        let data = await this.getAws().awsFunction.describeCluster(params).promise();
 
         this.state = data["Cluster"]["Status"]["State"];
 
         return Tagger._akvToMap(data["Cluster"]["Tags"]);
     };
+
+    public async isTaggableState() : Promise<boolean> {
+        if (this.state == null) {
+            await this._serviceGetTags();
+        }
+        if ( this.state.startsWith("TERM")) {
+            return false;
+        }
+        return true;
+    }
 
     protected async _serviceUpdateTags(tags : Tags) {
         let params = {
@@ -40,15 +45,7 @@ export default class EmrClusterTagger extends Tagger {
             Tags: Tagger._kvMapToArray(tags)
         };
         try {
-            if (this.state == undefined) {
-                await this._serviceGetTags();
-            }
-            if ( this.state.startsWith("TERM")) {
-            //    Terminate so can not update tags.
-            //    AWS doesn't like an attempt to update a tag that can not be updated.
-                return;
-            }
-            await this.getAwsFunction().addTags(params).promise();
+            await this.getAws().awsFunction.addTags(params).promise();
             return;
         } catch (err) {
             if ( err.message === "Tags cannot be modified on terminated clusters.") {
@@ -64,14 +61,7 @@ export default class EmrClusterTagger extends Tagger {
             ResourceId: this.config.resourceId,
             TagKeys: tagKeys
         };
-        if (this.state == undefined) {
-            await this._serviceGetTags();
-        }
-        if ( this.state.startsWith("TERM")) {
-            //    Terminate so can not update tags.
-            return;
-        }
-        return this.getAwsFunction().removeTags(params).promise();
+        return this.getAws().awsFunction.removeTags(params).promise();
     }
 }
 

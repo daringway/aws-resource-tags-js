@@ -1,11 +1,17 @@
 "use strict";
 
-import { Tagger, Tags, register }  from "./base";
+import {Tagger, Tags, register, AwsApiConfig} from "./base";
 
 export default class Ec2InstanceTagger extends Tagger {
 
-    protected _getAwsLibraryName() : string { return "EC2"; };
-    protected _getAwsApiVersion () : string { return "2016-11-15"; };
+    protected state : string = null;
+
+    protected getAwsApiConfig(): AwsApiConfig {
+        return {
+            awsLibraryName : "EC2",
+            awsApiVersion  : "2016-11-15"
+        };
+    };
 
     protected async _serviceGetTags() : Promise<Tags> {
         let params = {
@@ -18,7 +24,7 @@ export default class Ec2InstanceTagger extends Tagger {
                 }
             ]
         };
-        let data = await this.getAwsFunction().describeTags(params).promise();
+        let data = await this.getAws().awsFunction.describeTags(params).promise();
         return Tagger._akvToMap(data["Tags"]);
     };
 
@@ -29,8 +35,26 @@ export default class Ec2InstanceTagger extends Tagger {
             ],
             Tags: Tagger._kvMapToArray(tags)
         };
-        return this.getAwsFunction().createTags(params).promise();
+        return this.getAws().awsFunction.createTags(params).promise();
     };
+
+    async isTaggableState(): Promise<boolean> {
+        if (this.state == null) {
+            let params = {
+                InstanceIds: [
+                    this.config.resourceId
+                ]
+            };
+            try {
+                let data = await this.getAwsFunction().describeInstances(params).promise();
+                this.state = data["Reservations"][0]["Instances"][0]["State"]["Name"];
+            } catch(err) {
+                throw err;
+            }
+
+        }
+        return ["running", "stopping", "stopped", "pending"].includes(this.state)
+    }
 
     protected async _serviceDeleteTags(tagList : string[]) {
         let params = {
@@ -39,7 +63,7 @@ export default class Ec2InstanceTagger extends Tagger {
             ],
             Tags: Tagger._keyListToListMap(tagList)
         };
-        return this.getAwsFunction().deleteTags(params).promise();
+        return this.getAws().awsFunction.deleteTags(params).promise();
     };
 }
 

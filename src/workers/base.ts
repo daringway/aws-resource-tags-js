@@ -4,45 +4,55 @@ import * as AWS from "aws-sdk";
 
 // Don't implement elasticloadbalancing-loadbalancer as there is now way to tell V1 from V2 in ARN.
 
-export interface TaggerConfig {
+export interface Tags {
+    [key: string]: string
+}
+
+export interface AwsApiConfig {
+    readonly awsLibraryName : string,
+    readonly awsApiVersion  : string,
+    readonly rateLimit?     : number,
+    readonly rateIncrease?  : number,
+    readonly maxRetries?    : number,
+    readonly maxRateLimit?  : number
+}
+
+interface TaggerConfig {
     readonly resourceArn : string,
              region      : string,
     readonly accountId   : string,
     readonly resourceId  : string
 }
 
-export interface AboutTagger {
+interface AboutTagger {
     readonly taggerClass    : typeof Tagger,
     readonly service        : string,
     readonly resourceType   : string,
 }
 
-export interface TaggerLimits {
-    rateLimit         : number,
-    rateIncrease?     : number,
-    maxRetries?       : number,
-    maxRateLimit?     : number,
-    throttleFunction? : any
+interface TaggerAws {
+    awsFunction      : any,
+    throttleFunction : any,
+    currentRate      : number,
+    config           : AwsApiConfig
 }
 
-// let throttleRetry = require("promise-ratelimit")(50);
-let defaultMaxRetries = 25;
-let defaultRateIncrease = 25;
-let defaultMaxRateLimit = 2000;
-
-let baseLimits : TaggerLimits = {
-    rateLimit   : 0
+let defaultLimits : AwsApiConfig = {
+    awsApiVersion  : undefined,
+    awsLibraryName : undefined,
+    rateLimit      : 10,
+    rateIncrease   : 10,
+    maxRetries     : 10,
+    maxRateLimit   : 2000
 };
 
-export interface Tags {
-    [key: string]: string
-}
-
 let taggers: Record<string, AboutTagger> = {};
+let awsApis: Record<string, TaggerAws> = {};
 
 export function register(taggerClass   : typeof Tagger,
                          service       : string,
-                         resourceType  : string = undefined) {
+                         resourceType  : string = undefined
+    ) {
 
     let config : AboutTagger = {
         taggerClass  : taggerClass,
@@ -79,10 +89,6 @@ export function getWorkerInstance(resourceArn : string,
     if ( ["cloudformation", "events"].includes(service) ) {
         return null;
     }
-    // if (("elasticloadbalancing" === service) && (resourceType === "loadbalancer")) {
-    // //    Classic load balancer not support
-    //     return null;
-    // }
 
     let taggerClass = getTaggerClass(service, resourceType);
 
@@ -94,7 +100,6 @@ export function getWorkerInstance(resourceArn : string,
     };
     // @ts-ignore
     return new taggerClass(config);
-
 }
 
 function sleep(ms) {
@@ -103,37 +108,32 @@ function sleep(ms) {
 
 async function retry(obj : Tagger, fn, fnArgs, retries : number = 0) {
 
-    if (! obj.getLimits().throttleFunction) {
-        obj.getLimits().throttleFunction = require("promise-ratelimit")(obj.getLimits().rateLimit);
-    }
-    let prev = obj.getLimits().rateLimit;
-    await obj.getLimits().throttleFunction();
+    await obj.getAws().throttleFunction();
     try {
-        let x = await obj[fn](...fnArgs);
-        return x;
+        return await obj[fn](...fnArgs);
     } catch (error) {
-        if ((retries < obj.getLimits().maxRetries ? obj.getLimits().maxRetries : defaultMaxRetries)
+        if ((retries < obj.getAws().config.maxRetries)
             && error.retryable) {
 
-            let maxRate = obj.getLimits().maxRateLimit ? obj.getLimits().maxRateLimit : defaultMaxRateLimit;
             let increase : number;
-
             if (error.retryDelay > 0) {
                 increase = error.retryDelay * 2;
             } else {
-                increase = obj.getLimits().rateIncrease ? obj.getLimits().rateIncrease : defaultRateIncrease;
+                increase = obj.getAws().config.rateIncrease;
             }
-            obj.getLimits().rateLimit =  obj.getLimits().rateLimit + increase;
-            if ( obj.getLimits().rateLimit > maxRate ) {
-                 obj.getLimits().rateLimit = maxRate;
-                 console.log("WARN max rate limit reached with ", obj.config.resourceArn);
+            obj.getAws().currentRate =  obj.getAws().currentRate + increase;
+
+            if ( obj.getAws().currentRate > obj.getAws().config.maxRateLimit ) {
+                 obj.getAws().currentRate = obj.getAws().config.maxRateLimit;
+                 console.log("WARN max rate limit reached with", obj.config.resourceArn);
             }
-            obj.getLimits().throttleFunction = require("promise-ratelimit")(obj.getLimits().rateLimit);
-            await sleep(obj.getLimits().rateLimit);
+            obj.getAws().throttleFunction = require("promise-ratelimit")(obj.getAws().currentRate);
+            await sleep(obj.getAws().currentRate);
             await retry(obj, fn, fnArgs, retries + 1);
             return;
 
         } else {
+            console.log("ERROR max retries reached with", obj.config.resourceArn);
             throw error;
         }
     }
@@ -145,24 +145,20 @@ export abstract class Tagger  {
     private _cachedTags: Tags | null;
     private _loadedTags: Tags | null;
 
-    private awsFunction: any | null;
+    private awsAccess: any | null;
 
     constructor(config : TaggerConfig) {
 
-        this.config = config;
-
+        this.config      = config;
         this._cachedTags = null;
         this._loadedTags = null;
-
-        this.awsFunction = null;
-
+        this.awsAccess   = null;
     };
 
     protected abstract async _serviceGetTags() : Promise<Tags>;
     protected abstract async _serviceUpdateTags(tagMapUpdates : Tags);
     protected abstract async _serviceDeleteTags(tagsToDeleteList : string[]);
-    protected abstract _getAwsLibraryName() : string;
-    protected abstract _getAwsApiVersion()  : string;
+    protected abstract getAwsApiConfig() : AwsApiConfig;
 
     private static getEnvironmentRegion() : string {
         if (process.env.AWS_REGION) {
@@ -174,28 +170,57 @@ export abstract class Tagger  {
         }
     }
 
-    public getLimits() : TaggerLimits {
-        return baseLimits;
-    }
-
-    protected  getAwsFunction(useEnvironmentForRegion? : boolean) : any {
-        if (this.awsFunction === null) {
-            let regionToUse = this.config.region;
-            if (useEnvironmentForRegion) {
-                regionToUse = Tagger.getEnvironmentRegion();
-            }
-
-            this.awsFunction = new AWS[this._getAwsLibraryName()]({
-                apiVersion: this._getAwsApiVersion(),
-                region: regionToUse
-            });
-        }
-       return this.awsFunction;
-    }
-
     protected async getResourceRegion() : Promise<string> {
         return this.config.region;
     }
+    protected getResourceAwsFunction() : any {
+        return new AWS[this.getAwsApiConfig().awsLibraryName]({
+            apiVersion: this.getAwsApiConfig().awsApiVersion,
+            region: Tagger.getEnvironmentRegion()
+        })
+    }
+
+    public async isTaggableState() : Promise<boolean> {
+        return true;
+    }
+
+    public getAws() : TaggerAws {
+        if (this.awsAccess == null) {
+            let regionToUse    = this.config.region;
+            let apiConfig      = this.getAwsApiConfig();
+            let awsLibraryName = apiConfig.awsLibraryName;
+
+            let keyName = regionToUse + "-" + awsLibraryName;
+
+            if (!(keyName in awsApis)) {
+                let newConfig : AwsApiConfig = {
+                    awsLibraryName : apiConfig.awsLibraryName,
+                    awsApiVersion  : apiConfig.awsApiVersion,
+                    rateLimit      : apiConfig.rateLimit    ? apiConfig.rateLimit    : defaultLimits.rateLimit,
+                    rateIncrease   : apiConfig.rateIncrease ? apiConfig.rateIncrease : defaultLimits.rateIncrease,
+                    maxRateLimit   : apiConfig.maxRateLimit ? apiConfig.maxRateLimit : defaultLimits.maxRateLimit,
+                    maxRetries     : apiConfig.maxRetries   ? apiConfig.maxRetries   : defaultLimits.maxRetries
+                };
+
+                awsApis[keyName] = {
+                    awsFunction      : new AWS[newConfig.awsLibraryName]({
+                                            apiVersion: newConfig.awsApiVersion,
+                                            region: regionToUse
+                                        }),
+                    throttleFunction : require("promise-ratelimit")(newConfig.rateLimit),
+                    config           : newConfig,
+                    currentRate      : newConfig.rateLimit
+                }
+            }
+            this.awsAccess = awsApis[keyName];
+        }
+        return this.awsAccess;
+    }
+
+    protected getAwsFunction() : any {
+        return this.getAws().awsFunction;
+    }
+
 
     private checkLoaded() {
         if ( typeof this._loadedTags === null ) {
@@ -261,6 +286,7 @@ export abstract class Tagger  {
 
         try {
             await retry(this, "_updateAndDeleteTags", [tagsToUpdate, keysToDelete]);
+            this._loadedTags = {...this._cachedTags};
         } catch (err) {
             throw err;
         }

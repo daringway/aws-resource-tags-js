@@ -1,18 +1,22 @@
 "use strict";
 
-import { Tagger, Tags, register }  from "./base";
+import {Tagger, Tags, register, AwsApiConfig} from "./base";
 
 class LambdaTagger extends Tagger {
 
-    protected _getAwsLibraryName() : string { return "Lambda"; };
-    protected _getAwsApiVersion () : string { return "2015-03-31"; };
+    protected getAwsApiConfig(): AwsApiConfig {
+        return {
+            awsLibraryName : "Lambda",
+            awsApiVersion  : "2015-03-31"
+        };
+    };
 
     protected async _serviceGetTags() : Promise<Tags> {
         let params = {
             Resource: this.config.resourceArn
         };
 
-        let data = await this.getAwsFunction().listTags(params).promise();
+        let data = await this.getAws().awsFunction.listTags(params).promise();
         return data["Tags"];
     };
 
@@ -22,7 +26,7 @@ class LambdaTagger extends Tagger {
             Tags: tags
         };
 
-        return this.getAwsFunction().tagResource(params).promise();
+        return this.getAws().awsFunction.tagResource(params).promise();
     };
 
     protected async _serviceDeleteTags(tags : string[]) {
@@ -31,7 +35,7 @@ class LambdaTagger extends Tagger {
             TagKeys: tags
         };
 
-        return this.getAwsFunction().untagResource(params).promise();
+        return this.getAws().awsFunction.untagResource(params).promise();
     }
 }
 
