@@ -38,7 +38,7 @@ export default class Ec2InstanceTagger extends Tagger {
         return this.getAwsFunction().createTags(params).promise();
     };
 
-    async isTaggableState(): Promise<boolean> {
+    protected async _isTaggableState(): Promise<boolean> {
         if (this.state == null) {
             let params = {
                 InstanceIds: [
@@ -46,7 +46,6 @@ export default class Ec2InstanceTagger extends Tagger {
                 ]
             };
             try {
-                await this.getAws().throttleFunction();
                 let data = await this.getAwsFunction().describeInstances(params).promise();
                 this.state = data['Reservations'][0]['Instances'][0]['State']['Name'];
             } catch(err) {

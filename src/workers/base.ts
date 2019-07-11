@@ -180,8 +180,11 @@ export abstract class Tagger  {
         })
     }
 
-    public async isTaggableState() : Promise<boolean> {
+    protected async _isTaggableState() : Promise<boolean> {
         return true;
+    }
+    public async isTaggableState() : Promise<boolean> {
+        return await retry(this, '_isTaggableState', []);
     }
 
     public getAws() : TaggerAws {

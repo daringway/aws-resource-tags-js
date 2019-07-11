@@ -29,9 +29,8 @@ export default class EmrClusterTagger extends Tagger {
         return Tagger._akvToMap(data['Cluster']['Tags']);
     };
 
-    public async isTaggableState() : Promise<boolean> {
+    protected async _isTaggableState() : Promise<boolean> {
         if (this.state == null) {
-            await this.getAws().throttleFunction();
             await this._serviceGetTags();
         }
         if ( this.state.startsWith('TERM')) {

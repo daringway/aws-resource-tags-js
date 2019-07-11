@@ -20,7 +20,7 @@ class Ec2SubnetTagger extends Ec2InstanceTagger {
         return Tagger._akvToMap(data['Subnets'][0]['Tags']);
     };
 
-    async isTaggableState(): Promise<boolean> {
+    protected async _isTaggableState(): Promise<boolean> {
         return true;
     }
 }

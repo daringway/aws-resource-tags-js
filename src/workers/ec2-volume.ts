@@ -21,7 +21,7 @@ class Ec2VolumeTagger extends Ec2InstanceTagger {
 
     };
 
-    public async isTaggableState(): Promise<boolean> {
+    protected async _isTaggableState(): Promise<boolean> {
         if (this.state == null) {
             var params = { Filters: [
                 {
@@ -33,7 +33,6 @@ class Ec2VolumeTagger extends Ec2InstanceTagger {
                 ]
             };
             try {
-                await this.getAws().throttleFunction();
                 let data = await this.getAwsFunction().describeVolumes(params).promise();
                 this.state = data['Volumes'][0]['State'];
             } catch(err) {
