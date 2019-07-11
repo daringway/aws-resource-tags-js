@@ -42,7 +42,7 @@ async function taggerCallback(callback, resourceData, region) {
     try {
         await callback(tagger);
     } catch (err) {
-        if (err.code.endsWith('.NotFound')) {
+        if ((typeof err.code === 'string') && err.code.endsWith('.NotFound')) {
             // Sometimes the resource will delete between listing and the callback, ignore these.
             return;
         } else {
@@ -66,7 +66,7 @@ export async function forEachTagger(params : object, callback : Function, region
     let data = await rgTagApi.getResources(params).promise();
 
     // Want to do this in sequence otherwise AWS API get unhappy
-    for (var i = 0; i < data['ResourceTagMappingList'].length; i++) {
+    for (let i = 0; i < data['ResourceTagMappingList'].length; i++) {
         let x = data['ResourceTagMappingList'][i];
         await taggerCallback(callback, x, foundRegion);
     }
@@ -91,20 +91,19 @@ export function getTaggerByArn(resourceArn : string, resourceRegion? : string): 
         region = resourceRegion;
     }
 
-    // TODO Move this to be a function in each module to iterate through here.
-    if (['lambda', 'rds', 'redshift'].indexOf(service) >= 0) {
+    let parts = resourceArn.split(':');
+    if (parts.length === 7) {
         resourceType = resourceArn.split(':')[5];
         resourceId = resourceArn.split(':')[6];
-    } else if (['ec2', 'subnet', 'cloudfront', 'elasticloadbalancing', 'dynamodb', 'es', 'elasticmapreduce'].indexOf(service) >= 0) {
-        let resource = resourceArn.split(':')[5];
-        resourceType = resource.split('/')[0];
-        resourceId = resource.split('/')[1];
-    } else if (['s3'].indexOf(service) >= 0) {
-        resourceType = service;
-        resourceId = resourceArn.split(':')[5];
     } else {
-        resourceType = 'unknown';
-        resourceId = 'unknown';
+        let resourceParts = parts[5].split('/');
+        if (resourceParts.length == 1) {
+            resourceType = service;
+            resourceId = resourceParts[0];
+        } else {
+            resourceType = resourceParts[0];
+            resourceId   = resourceParts.slice(1).join('/');
+        }
     }
 
     return getWorkerInstance(resourceArn, service, region, accountId, resourceType, resourceId);

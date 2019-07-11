@@ -1,6 +1,6 @@
 {
   "name": "aws-resource-tags",
-  "version": "0.2.41",
+  "version": "0.2.44",
   "description": "Javascript library for access AWS Resource Tags",
   "main": "dist/index.js",
   "files": [
@@ -8,7 +8,7 @@
     "dist"
   ],
   "scripts": {
-    "task": "node ./tasksfile.js",
+    "task": "ts-node ./tasksfile.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -33,12 +33,14 @@
     "source-map-support": "^0.5.12"
   },
   "devDependencies": {
+    "@pawelgalazka/shell": "^2.0.0",
     "@typescript-eslint/eslint-plugin": "^1.11.0",
     "@typescript-eslint/parser": "^1.11.0",
     "eslint": "^6.0.1",
     "glob": "^7.1.4",
     "nodeman": "^1.1.2",
     "tasksfile": "^5.1.0",
+    "ts-node": "^8.3.0",
     "typescript": "^3.5.2"
   }
 }

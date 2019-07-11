@@ -47,6 +47,9 @@ export default class Ec2InstanceTagger extends Tagger {
             };
             try {
                 let data = await this.getAwsFunction().describeInstances(params).promise();
+                if (data['Reservations'].length == 0) {
+                    return false;
+                }
                 this.state = data['Reservations'][0]['Instances'][0]['State']['Name'];
             } catch(err) {
                 throw err;

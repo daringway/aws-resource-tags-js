@@ -18,10 +18,12 @@ export interface AwsApiConfig {
 }
 
 interface TaggerConfig {
-    readonly resourceArn : string,
-             region      : string,
-    readonly accountId   : string,
-    readonly resourceId  : string
+    readonly resourceArn  : string,
+             region       : string,
+    readonly accountId    : string,
+    readonly resourceId   : string,
+    readonly service      : string,
+    readonly resourceType : string
 }
 
 interface AboutTagger {
@@ -96,7 +98,9 @@ export function getWorkerInstance(resourceArn : string,
         resourceArn  : resourceArn,
         region       : region,
         accountId    : accountId,
-        resourceId   : resourceId
+        resourceId   : resourceId,
+        service      : service,
+        resourceType : resourceType
     };
     // @ts-ignore
     return new taggerClass(config);

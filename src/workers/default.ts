@@ -8,7 +8,8 @@ class DefaultTagger extends Tagger {
         return {
             awsLibraryName : 'ResourceGroupsTaggingAPI',
             awsApiVersion  : '2017-01-26',
-            rateLimit      : 100
+            rateLimit      : 100,
+            rateIncrease   : 100
         };
     };
 
@@ -36,7 +37,6 @@ class DefaultTagger extends Tagger {
                             message: data['FailedResourcesMap'][this.config.resourceArn]['ErrorMessage'],
                             httpCode: data['FailedResourcesMap'][this.config.resourceArn]['StatusCode'],
                             errorCode: data['FailedResourcesMap'][this.config.resourceArn]['ErrorCode'],
-                            retryDelay: 100,
                             retryable: true
                         };
                         reject(errorMap);
@@ -67,7 +67,6 @@ class DefaultTagger extends Tagger {
                             message: data['FailedResourcesMap']['ErrorMessage'],
                             httpCode: data['FailedResourcesMap']['StatusCode'],
                             errorCode: data['FailedResourcesMap']['ErrorCode'],
-                            retryDelay: 100,
                             retryable: true
                         });
                     } else {

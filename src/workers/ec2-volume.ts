@@ -34,6 +34,9 @@ class Ec2VolumeTagger extends Ec2InstanceTagger {
             };
             try {
                 let data = await this.getAwsFunction().describeVolumes(params).promise();
+                if (data['Volumes'].length == 0) {
+                    return false;
+                }
                 this.state = data['Volumes'][0]['State'];
             } catch(err) {
                 throw err;

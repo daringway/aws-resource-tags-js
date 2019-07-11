@@ -8,7 +8,7 @@ var resourceTagFactory = require('.');
 let testArns = [
     'arn:aws:lambda:us-east-1:717475838310:function:cloudfront-edge-index',
     'arn:aws:ec2:us-east-1:717475838310:instance/i-034e6e41f6cfc1e73',
-    // 'arn:aws:ec2:us-east-1:717475838310:subnet/subnet-0df91151',
+    'arn:aws:ec2:us-east-1:717475838310:subnet/subnet-0df91151',
     'arn:aws:ec2:us-east-1:717475838310:volume/vol-03ffa5c53c9b21562',
     'arn:aws:elasticloadbalancing:us-east-1:717475838310:loadbalancer/app/testtttt/6e236e62264c47b1',
     'arn:aws:dynamodb:us-east-1:717475838310:table/daring-site-redirect',
@@ -75,7 +75,10 @@ testArns.forEach(async function(arn) {
     let tagger = resourceTagFactory.getTaggerByArn(arn);
     try {
         let v = await tagger.isTaggableState();
-        console.log("taggable", v);
+        console.log(v ? 'taggable' : 'not taggable',
+            tagger.config.service,
+            tagger.config.resourceType,
+            tagger.config.resourceId);
     } catch (err) {
         console.log("ERROR", err);
     }
