@@ -1,7 +1,11 @@
 'use strict';
 
-import {Tagger, Tags, register, AwsApiConfig} from './base';
+/* Copyright (C) 2019 Walter Derezinski - All Rights Reserved
+ * You may use, distribute and modify this code under the
+ * terms of the ISC license.
+ */
 
+import {Tagger, Tags, register, AwsApiConfig} from './base';
 
 export default class EmrClusterTagger extends Tagger {
 

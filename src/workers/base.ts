@@ -1,5 +1,10 @@
 'use strict';
 
+/* Copyright (C) 2019 Walter Derezinski - All Rights Reserved
+ * You may use, distribute and modify this code under the
+ * terms of the ISC license.
+ */
+
 import * as AWS from 'aws-sdk';
 
 // Don't implement elasticloadbalancing-loadbalancer as there is now way to tell V1 from V2 in ARN.
