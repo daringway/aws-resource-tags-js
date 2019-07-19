@@ -5,18 +5,6 @@ require('source-map-support').install();
 
 var resourceTagFactory = require('.');
 
-let testArns = [
-    'arn:aws:lambda:us-east-1:717475838310:function:cloudfront-edge-index',
-    'arn:aws:ec2:us-east-1:717475838310:instance/i-034e6e41f6cfc1e73',
-    'arn:aws:ec2:us-east-1:717475838310:subnet/subnet-0df91151',
-    'arn:aws:ec2:us-east-1:717475838310:volume/vol-03ffa5c53c9b21562',
-    'arn:aws:elasticloadbalancing:us-east-1:717475838310:loadbalancer/app/testtttt/6e236e62264c47b1',
-    'arn:aws:dynamodb:us-east-1:717475838310:table/daring-site-redirect',
-
-    'arn:aws:cloudfront::717475838310:distribution/EIN0PLW2VI08W',
-    'arn:aws:s3:::daring-packages'
-];
-
 let tag_value = "big number " + Math.random();
 let tagComplianceName = 'tag-compliance';
 let searchParams = {
@@ -32,44 +20,44 @@ TagFilters: [
 
 searchParams = {};
 
-// let every = 4;
-// let count = every;
-// resourceTagFactory.forEachTagger(searchParams, (tagger) => {
-//     // console.log(tagger);
-//     // console.log(tagger.tags['application'], tagger.tags[tagComplianceName], tagger.arn);
-//     // if ( ! ('tagger' in tagger.tags) ) {
-//     //     tagger.tags['tagger'] = tag_value;
-//     // }
-//     // tagger.tags[tagComplianceName] = 'unknown';
-//     // tagger.tags['tag-compliance-state'] = 'pending';
-//     // delete tagger.tags['tag-compliance'];
-//     // delete tagger.tags['tag-compliance-state'];
-//     // delete tagger.tags['tag-compliance-message'];
-//
-//     let value = Math.floor(Math.random() * 10 / 5)
-//     if (count == 0) {
-//         count = every;
-//         tagger.tags['application'] = tag_value;
-//         console.log('updating application', tagger.config.resourceArn);
-//     } else if (count == 1) {
-//         tagger.tags['tag-compliance'] = 'unknown';
-//         console.log('rechecking unknown', tagger.config.resourceArn);
-//     } else if (count == value) {
-//         tagger.tags['application'] = tag_value;
-//         console.log('updating application', tagger.config.resourceArn);
-//     } else if (count == value) {
-//         delete tagger.tags['application'];
-//         console.log('deleting application', tagger.config.resourceArn);
-//
-//     }
-//     count--;
-//
-//     return tagger.save();
-// }).catch( err => {
-//     console.log(err.stack);
-// }).then( () => {
-//     console.log("made it");
-// })
+let every = 4;
+let count = every;
+resourceTagFactory.forEachTagger(searchParams, (tagger) => {
+    // console.log(tagger);
+    // console.log(tagger.tags['application'], tagger.tags[tagComplianceName], tagger.arn);
+    // if ( ! ('tagger' in tagger.tags) ) {
+    //     tagger.tags['tagger'] = tag_value;
+    // }
+    // tagger.tags[tagComplianceName] = 'unknown';
+    // tagger.tags['tag-compliance-state'] = 'pending';
+    // delete tagger.tags['tag-compliance'];
+    // delete tagger.tags['tag-compliance-state'];
+    // delete tagger.tags['tag-compliance-message'];
+
+    let value = Math.floor(Math.random() * 10 / 5)
+    if (count == 0) {
+        count = every;
+        tagger.tags['application'] = tag_value;
+        console.log('updating application', tagger.config.resourceArn);
+    } else if (count == 1) {
+        tagger.tags['tag-compliance'] = 'unknown';
+        console.log('rechecking unknown', tagger.config.resourceArn);
+    } else if (count == value) {
+        tagger.tags['application'] = tag_value;
+        console.log('updating application', tagger.config.resourceArn);
+    } else if (count == value) {
+        delete tagger.tags['application'];
+        console.log('deleting application', tagger.config.resourceArn);
+
+    }
+    count--;
+
+    return tagger.save();
+}).catch( err => {
+    console.log(err.stack);
+}).then( () => {
+    console.log("made it");
+})
 
 testArns.forEach(async function(arn) {
     let tagger = resourceTagFactory.getTaggerByArn(arn);

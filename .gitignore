@@ -5,6 +5,7 @@ function.zip
 dist
 public
 src/workers/index.ts
+local
 
 # Mac OS X
 .DS_Store
