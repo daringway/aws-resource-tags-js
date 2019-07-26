@@ -93,7 +93,7 @@ export function getTaggerByArn(resourceArn : string, resourceRegion? : string): 
     let resourceId = null;
 
     if (! region) {
-        region = resourceRegion;
+        region = getRegion(resourceRegion);
     }
 
     let parts = resourceArn.split(':');
